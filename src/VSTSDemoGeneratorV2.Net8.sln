@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VstsDemoBuilder.Net8", "Vst
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VstsRestAPI.Net8", "VstsRestAPI.Net8\VstsRestAPI.Net8.csproj", "{0053291B-E202-43C7-9310-A7EC47003611}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VstsDemoBuilder.Blazor", "VstsDemoBuilder.Blazor\VstsDemoBuilder.Blazor.csproj", "{D0EF96B3-8F89-4414-81FF-91B1137C8B68}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{0053291B-E202-43C7-9310-A7EC47003611}.Release|x64.Build.0 = Release|Any CPU
 		{0053291B-E202-43C7-9310-A7EC47003611}.Release|x86.ActiveCfg = Release|Any CPU
 		{0053291B-E202-43C7-9310-A7EC47003611}.Release|x86.Build.0 = Release|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Debug|x64.Build.0 = Debug|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Debug|x86.Build.0 = Debug|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Release|x64.ActiveCfg = Release|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Release|x64.Build.0 = Release|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Release|x86.ActiveCfg = Release|Any CPU
+		{D0EF96B3-8F89-4414-81FF-91B1137C8B68}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
