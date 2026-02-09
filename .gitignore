@@ -149,5 +149,5 @@ UpgradeLog.htm
 /src/VstsDemoBuilder/Logs
 /src/VstsDemoBuilder/ExtractedTemplate/adqw
 /src/AzureDevOpsDemoBuilder/log
-/src/AzureDevOpsDemoBuilder/Appsettings.Development.json
+*.[Dd]evelopment.json
 /src/AzureDevOpsDemoBuilder/appsettings.json
