@@ -151,3 +151,5 @@ UpgradeLog.htm
 /src/AzureDevOpsDemoBuilder/log
 *.[Dd]evelopment.json
 /src/AzureDevOpsDemoBuilder/appsettings.json
+src/VstsDemoBuilder.Blazor/bin/
+src/VstsDemoBuilder.Blazor/obj/

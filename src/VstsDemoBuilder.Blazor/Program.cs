@@ -1,6 +1,6 @@
 using log4net.Config;
 using Microsoft.Extensions.FileProviders;
-using VstsDemoBuilder.Blazor.Components;
+using VstsDemoBuilder.Components;
 using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.ServiceInterfaces;
 using VstsDemoBuilder.Services;
