@@ -1,0 +1,80 @@
+@page "/environment/create"
+@inject NavigationManager Navigation
+
+<PageTitle>Select Template - Azure DevOps Demo Generator</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Select a Template</h2>
+            <p class="lead">Choose a template to create your Azure DevOps demo project</p>
+            <hr />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-kanban text-primary"></i> Scrum Template
+                    </h5>
+                    <p class="card-text">
+                        Pre-configured Scrum project with sprints, user stories, and tasks.
+                    </p>
+                    <button class="btn btn-primary" @onclick='() => SelectTemplate("SmartHotel360")'>
+                        Use This Template
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-git text-success"></i> DevOps Starter
+                    </h5>
+                    <p class="card-text">
+                        Complete CI/CD pipeline setup with build and release definitions.
+                    </p>
+                    <button class="btn btn-primary" @onclick='() => SelectTemplate("MyHealthClinic")'>
+                        Use This Template
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-cloud text-info"></i> Azure Integration
+                    </h5>
+                    <p class="card-text">
+                        Azure service connections and deployment pipelines pre-configured.
+                    </p>
+                    <button class="btn btn-primary" @onclick='() => SelectTemplate("PartsUnlimited")'>
+                        Use This Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> <strong>Note:</strong> You'll need to authenticate with Azure DevOps to create a project.
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private void SelectTemplate(string templateName)
+    {
+        // Navigate to project creation page with selected template
+        Navigation.NavigateTo($"/environment/createproject?template={templateName}");
+    }
+}

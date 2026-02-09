@@ -1,7 +1,74 @@
 ﻿@page "/"
+@using VstsDemoBuilder.ServiceInterfaces
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Azure DevOps Demo Generator - Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container-fluid" style="background-color: white; padding: 40px;">
+    <div class="jumbotron bg-light p-5 rounded-3">
+        <h1 class="display-4">Azure DevOps Demo Generator</h1>
+        <p class="lead">
+            Welcome to the Azure DevOps Demo Generator! This tool helps you create sample Azure DevOps projects
+            with pre-populated content including source code, work items, iterations, service endpoints, build and release definitions.
+        </p>
+        <hr class="my-4">
+        <p>
+            Choose from a variety of templates to quickly set up demo environments for Azure DevOps features like:
+        </p>
+        <ul>
+            <li>Agile planning and work tracking</li>
+            <li>CI/CD pipelines</li>
+            <li>Test management</li>
+            <li>Source control with Git</li>
+            <li>Azure integrations</li>
+        </ul>
+        <p class="mt-4">
+            <a class="btn btn-primary btn-lg" href="/environment/create" role="button">Get Started</a>
+            <a class="btn btn-secondary btn-lg ms-2" href="/extractor" role="button">Template Extractor</a>
+        </p>
+    </div>
 
-Welcome to your new app.
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightning-fill text-primary"></i> Quick Setup
+                    </h5>
+                    <p class="card-text">
+                        Create a fully configured Azure DevOps project in minutes with pre-populated content
+                        based on proven templates.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-palette-fill text-success"></i> Multiple Templates
+                    </h5>
+                    <p class="card-text">
+                        Choose from various templates including Scrum, DevOps practices, GitHub integrations,
+                        and more.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-gear-fill text-info"></i> Template Extractor
+                    </h5>
+                    <p class="card-text">
+                        Create your own templates by extracting configuration from existing Azure DevOps projects.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+}
