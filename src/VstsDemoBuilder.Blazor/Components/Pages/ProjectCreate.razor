@@ -1,0 +1,37 @@
+@page "/project/create"
+@using VstsDemoBuilder.Blazor.Session
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Create Project</PageTitle>
+
+<main class="entry-shell">
+    <section class="entry-card">
+        <h1>Create Project</h1>
+        <p>Sessione avviata. Organizzazioni disponibili:</p>
+
+        @if (Organizations.Count == 0)
+        {
+            <p>Nessuna organizzazione disponibile.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var organization in Organizations)
+                {
+                    <li>@organization</li>
+                }
+            </ul>
+        }
+
+        <a class="btn btn-outline-secondary" href="/auth/signout">Sign out</a>
+    </section>
+</main>
+
+@code {
+    private IReadOnlyList<string> Organizations { get; set; } = [];
+
+    protected override void OnInitialized()
+    {
+        Organizations = HttpContextAccessor.HttpContext?.Session.GetStringList(SessionKeys.Organizations) ?? [];
+    }
+}
