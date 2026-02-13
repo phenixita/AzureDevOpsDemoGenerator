@@ -16,6 +16,9 @@ Feature: Compilazione form di creazione progetto
     Given l'utente e' nella pagina "Create Project"
     When il form viene caricato
     Then sono visibili i campi "Template", "Project Name" e "Organization"
+    And Project name è un campo di testo libero
+    And Organization è una scelta da menù a tendina
+    And Template è una scelta da menù a tendina
 
   Scenario: Organizzazione non selezionata
     Given l'utente non ha selezionato un'organizzazione valida

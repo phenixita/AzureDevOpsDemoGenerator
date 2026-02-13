@@ -52,7 +52,6 @@ namespace VstsDemoBuilder.Services
                 // Use Entra ID token endpoint
                 string tokenEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
                 var client = new HttpClient();
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 var request = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
 
                 var requestContent = body;

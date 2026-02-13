@@ -247,9 +247,6 @@ namespace VstsDemoBuilder.Controllers.Apis
         public IActionResult GetCurrentProgress(string TrackId)
         {
             ProjectService.TrackFeature("api/environment/GetCurrentProgress");
-            ServicePointManager.Expect100Continue = true;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            // Use SecurityProtocolType.Ssl3 if needed for compatibility reasons
 
             var currentProgress = projectService.GetStatusMessage(TrackId);
             return Ok(currentProgress["status"]);

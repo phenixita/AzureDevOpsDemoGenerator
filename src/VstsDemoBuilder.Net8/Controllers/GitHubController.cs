@@ -29,8 +29,6 @@ namespace VstsDemoBuilder.Controllers
         [AllowAnonymous]
         public ActionResult Redirect()
         {
-            ServicePointManager.Expect100Continue = true;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             // Here we get the Code in the Query String, using that we can get access token
             var request = Request;
             string code = Request.Query["code"];

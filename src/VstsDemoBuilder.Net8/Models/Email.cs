@@ -40,8 +40,6 @@ namespace VstsDemoBuilder.Models
             };
             try
 			{
-				ServicePointManager.ServerCertificateValidationCallback = delegate (object s, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-				{ return true; };
 				smtp.Send(newmsg);
 			}
 			catch (Exception)

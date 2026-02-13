@@ -1,37 +1,230 @@
 @page "/project/create"
+@using System.Linq
+@using VstsDemoBuilder.Blazor.Models
+@using VstsDemoBuilder.Blazor.Services
 @using VstsDemoBuilder.Blazor.Session
 @inject IHttpContextAccessor HttpContextAccessor
+@inject ITemplateCatalogService TemplateCatalogService
+@inject IProvisioningService ProvisioningService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Create Project</PageTitle>
 
 <main class="entry-shell">
     <section class="entry-card">
         <h1>Create Project</h1>
-        <p>Sessione avviata. Organizzazioni disponibili:</p>
-
-        @if (Organizations.Count == 0)
+        
+        @if (_showSuccess && !string.IsNullOrEmpty(_trackingId))
         {
-            <p>Nessuna organizzazione disponibile.</p>
-        }
-        else
-        {
-            <ul>
-                @foreach (var organization in Organizations)
-                {
-                    <li>@organization</li>
-                }
-            </ul>
+            <div class="alert alert-success">
+                <h5>Provisioning Started Successfully!</h5>
+                <p>Tracking ID: <strong>@_trackingId</strong></p>
+                <p>Your project is being created. You can track progress using this ID.</p>
+            </div>
         }
 
-        <a class="btn btn-outline-secondary" href="/auth/signout">Sign out</a>
+        <EditForm Model="@_formModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger mb-3" />
+
+            <!-- Template Selection -->
+            <div class="mb-3">
+                <label for="template" class="form-label">Select Template</label>
+                <InputSelect id="template" class="form-select" @bind-Value="_formModel.TemplateFolder" @onchange="OnTemplateChanged">
+                    <option value="">-- Select Template --</option>
+                    @foreach (var template in _templates)
+                    {
+                        <option value="@template.TemplateFolder">@template.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => _formModel.TemplateFolder)" class="text-danger" />
+            </div>
+
+            <!-- Project Name -->
+            <div class="mb-3">
+                <label for="projectName" class="form-label">Project Name <span class="text-danger">*</span></label>
+                <InputText id="projectName" class="form-control" @bind-Value="_formModel.ProjectName" placeholder="Enter project name" />
+                <ValidationMessage For="@(() => _formModel.ProjectName)" class="text-danger" />
+            </div>
+
+            <!-- Organization -->
+            <div class="mb-3">
+                <label for="organization" class="form-label">Select Organization <span class="text-danger">*</span></label>
+                <InputSelect id="organization" class="form-select" @bind-Value="_formModel.Organization">
+                    <option value="">-- Select Organization --</option>
+                    @foreach (var org in _organizations)
+                    {
+                        <option value="@org">@org</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => _formModel.Organization)" class="text-danger" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_sessionError))
+            {
+                 <div class="alert alert-warning">
+                    @_sessionError
+                 </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger">
+                    @_errorMessage
+                </div>
+            }
+
+            <!-- Dynamic Parameters Section -->
+            @if (_currentTemplateParameters.Count > 0)
+            {
+                <div class="mb-3">
+                    <h5>Template Parameters</h5>
+                    @foreach (var param in _currentTemplateParameters)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">@param.Label</label>
+                            <input type="text"
+                                   class="form-control"
+                                   @bind="_formModel.Parameters[param.FieldName]" />
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Submit Button -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span> Creating...</span>
+                    }
+                    else
+                    {
+                        <span>Create Project</span>
+                    }
+                </button>
+            </div>
+            
+            <div class="mt-3 text-center">
+                 <a class="text-secondary text-decoration-none" href="/auth/signout">Sign out</a>
+            </div>
+
+        </EditForm>
     </section>
 </main>
 
 @code {
-    private IReadOnlyList<string> Organizations { get; set; } = [];
+    private ProjectCreateFormModel _formModel = new();
+    private List<string> _organizations = [];
+    private List<TemplateCatalogItem> _templates = [];
+    private List<TemplateParameterDefinition> _currentTemplateParameters = [];
+    private bool _isSubmitting = false;
+    private string? _trackingId;
+    private string? _sessionError;
+    private bool _showSuccess = false;
+    private string? _errorMessage;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        Organizations = HttpContextAccessor.HttpContext?.Session.GetStringList(SessionKeys.Organizations) ?? [];
+        // Load Organizations from session
+        if (HttpContextAccessor.HttpContext?.Session != null)
+        {
+            var orgs = HttpContextAccessor.HttpContext.Session.GetStringList(SessionKeys.Organizations) ?? [];
+            _organizations = orgs.ToList();
+            if (_organizations.Count == 0)
+            {
+                _sessionError = "No organizations found in session. Please sign in again.";
+            }
+        }
+
+        _templates = await TemplateCatalogService.GetAllTemplatesAsync();
+    }
+
+    private async Task OnTemplateChanged(ChangeEventArgs e)
+    {
+        var templateFolder = e.Value?.ToString();
+        _formModel.TemplateFolder = templateFolder ?? string.Empty;
+        _currentTemplateParameters.Clear();
+        _formModel.Parameters.Clear();
+
+        if (string.IsNullOrWhiteSpace(templateFolder))
+        {
+            return;
+        }
+
+        _currentTemplateParameters = await TemplateCatalogService.GetTemplateParametersAsync(templateFolder);
+        foreach (var param in _currentTemplateParameters)
+        {
+            _formModel.Parameters[param.FieldName] = string.Empty;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+        _showSuccess = false;
+
+        try
+        {
+            var session = HttpContextAccessor.HttpContext?.Session;
+            if (session is null)
+            {
+                _errorMessage = "Session not available. Please sign in again.";
+                return;
+            }
+
+            var email = session.GetEmail() ?? string.Empty;
+            var accessToken = session.GetAccessToken();
+            var userId = session.GetUserId() ?? email;
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                _errorMessage = "Session expired. Please sign in again.";
+                return;
+            }
+
+            if (!ValidateDynamicParameters())
+            {
+                return;
+            }
+
+            _trackingId = await ProvisioningService.StartProjectProvisioningAsync(
+                _formModel,
+                userId,
+                email,
+                accessToken);
+
+            _showSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to start provisioning: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private bool ValidateDynamicParameters()
+    {
+        if (!_currentTemplateParameters.Any())
+        {
+            return true;
+        }
+
+        foreach (var param in _currentTemplateParameters)
+        {
+            if (!_formModel.Parameters.ContainsKey(param.FieldName) ||
+                string.IsNullOrWhiteSpace(_formModel.Parameters[param.FieldName]))
+            {
+                _errorMessage = $"Please fill in all template parameters: {param.Label}";
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -620,7 +620,7 @@ namespace VstsDemoBuilder.Services
                                     }
                                 }
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
 
                             }
@@ -3097,7 +3097,7 @@ namespace VstsDemoBuilder.Services
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
             }
@@ -3108,7 +3108,7 @@ namespace VstsDemoBuilder.Services
             try
             {
             }
-            catch(Exception ex)
+            catch(Exception)
             {
 
             }

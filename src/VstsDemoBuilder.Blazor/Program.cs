@@ -1,10 +1,24 @@
+using log4net.Config;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using System.IO;
 using VstsDemoBuilder.Blazor.Components;
 using VstsDemoBuilder.Blazor.Configuration;
 using VstsDemoBuilder.Blazor.Services;
 using VstsDemoBuilder.Blazor.Session;
+using VstsDemoBuilder.Infrastructure;
+using VstsDemoBuilder.ServiceInterfaces;
+using VstsDemoBuilder.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+AppSettings.Initialize(builder.Configuration);
+System.Web.Hosting.HostingEnvironment.Initialize(builder.Environment.ContentRootPath);
+
+var log4netConfigPath = Path.Combine(builder.Environment.ContentRootPath, "log4net.config");
+if (File.Exists(log4netConfigPath))
+{
+    XmlConfigurator.Configure(new FileInfo(log4netConfigPath));
+}
 
 // Add services to the container.
 builder.Services.Configure<AzureDevOpsOAuthOptions>(options =>
@@ -40,6 +54,12 @@ builder.Services
         options.SlidingExpiration = true;
     });
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.AddScoped<ITemplateCatalogService, TemplateCatalogService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IProvisioningService, ProvisioningService>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

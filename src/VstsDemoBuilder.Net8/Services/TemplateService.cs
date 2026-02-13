@@ -186,11 +186,16 @@ namespace VstsDemoBuilder.Services
                 //Downloading file from other source type (ftp or https)
                 else
                 {
-                    WebClient webClient = new WebClient();
+                    // Using HttpClient instead of WebClient (SYSLIB0014)
+                    using var handler = new System.Net.Http.HttpClientHandler();
                     if (UserID != null && Password != null)
-                        webClient.Credentials = new NetworkCredential(UserID, Password);
-                    webClient.DownloadFile(TemplateUrl, path);
-                    webClient.Dispose();
+                    {
+                        handler.Credentials = new NetworkCredential(UserID, Password);
+                    }
+                    
+                    using var client = new System.Net.Http.HttpClient(handler);
+                    var contents = client.GetByteArrayAsync(TemplateUrl).Result;
+                    System.IO.File.WriteAllBytes(path, contents);
                 }
                 templatePath = ExtractZipFile(path, templateName);
 

@@ -206,7 +206,7 @@ namespace VstsDemoBuilder.Controllers
         /// <returns></returns>
         [HttpGet]
         [AllowAnonymous]
-        public ActionResult SignOut()
+        public new ActionResult SignOut()
         {
             Session.Clear();
             return Redirect("https://app.vssps.visualstudio.com/_signout");

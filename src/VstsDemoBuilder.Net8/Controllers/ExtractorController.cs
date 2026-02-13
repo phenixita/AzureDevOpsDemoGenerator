@@ -33,7 +33,7 @@ namespace VstsDemoBuilder.Controllers
         }
 
         [AllowAnonymous]
-        public ActionResult NotFound()
+        public new ActionResult NotFound()
         {
             return View();
         }
