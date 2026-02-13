@@ -67,7 +67,8 @@ app.Use(async (context, next) =>
     if (context.Request.Path.Equals("/project/create", StringComparison.OrdinalIgnoreCase))
     {
         var hasIdentity = context.User?.Identity?.IsAuthenticated == true;
-        var hasOrganizations = !string.IsNullOrWhiteSpace(context.Session.GetString(SessionKeys.Organizations));
+        var organizations = context.Session.GetStringList(SessionKeys.Organizations);
+        var hasOrganizations = organizations.Count > 0;
         if (!hasIdentity || !hasOrganizations)
         {
             context.Response.Redirect("/");
