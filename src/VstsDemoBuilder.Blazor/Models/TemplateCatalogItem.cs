@@ -12,5 +12,9 @@ public sealed class TemplateCatalogItem
 
     public List<string> Tags { get; set; } = [];
 
+    public string MessageHtml { get; set; } = string.Empty;
+
+    public List<string> PreviewImages { get; set; } = [];
+
     public string? ImageUrl { get; set; }
 }

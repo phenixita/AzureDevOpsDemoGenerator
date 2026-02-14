@@ -1,0 +1,243 @@
+@using VstsDemoBuilder.Blazor.Models
+
+@if (IsOpen)
+{
+    <div class="template-selection-modal-backdrop" @onclick="HandleCloseAsync">
+        <div class="template-selection-modal-dialog" role="dialog" aria-modal="true" aria-label="Choose template" @onclick:stopPropagation="true">
+            <header class="template-selection-modal-header">
+                <h2>Choose template</h2>
+                <button type="button" class="template-selection-modal-close" @onclick="HandleCloseAsync" aria-label="Close dialog">×</button>
+            </header>
+
+            <section class="template-selection-modal-body">
+                <div class="template-selection-modal-main">
+                    <nav class="template-selection-group-tabs" aria-label="Template groups">
+                        @foreach (var group in Groups)
+                        {
+                            var isActive = IsActiveGroup(group);
+                            <button type="button"
+                                    class="template-selection-group-tab @(isActive ? "active" : string.Empty)"
+                                    @onclick="() => SelectGroup(group.GroupName)">
+                                @group.GroupName
+                            </button>
+                        }
+                    </nav>
+
+                    <div class="template-selection-card-grid">
+                        @if (VisibleTemplates.Count == 0)
+                        {
+                            <p class="template-selection-empty">No templates available in this group.</p>
+                        }
+                        else
+                        {
+                            @foreach (var template in VisibleTemplates)
+                            {
+                                <button type="button"
+                                        class="template-selection-card @(IsSelected(template) ? "selected" : string.Empty)"
+                                        data-template-folder="@template.TemplateFolder"
+                                        @onclick="() => HandleTemplateClickedAsync(template)">
+                                    @if (!string.IsNullOrWhiteSpace(template.ImageUrl))
+                                    {
+                                        <img src="@template.ImageUrl" alt="@template.Name preview" />
+                                    }
+                                    <span class="template-selection-card-title">@template.Name</span>
+                                    @if (!string.IsNullOrWhiteSpace(template.Description))
+                                    {
+                                        <span class="template-selection-card-description">@template.Description</span>
+                                    }
+                                </button>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <aside class="template-selection-preview" aria-label="Template preview">
+                    @if (PreviewTemplate is null)
+                    {
+                        <p>Select a template to preview details.</p>
+                    }
+                    else
+                    {
+                        <h3>@PreviewTemplate.Name</h3>
+                        @if (!string.IsNullOrWhiteSpace(PreviewTemplate.Description))
+                        {
+                            <p>@PreviewTemplate.Description</p>
+                        }
+
+                        @if (PreviewTemplate.Tags.Count > 0)
+                        {
+                            <div class="template-selection-tags">
+                                @foreach (var tag in PreviewTemplate.Tags)
+                                {
+                                    <span class="template-selection-tag">@tag</span>
+                                }
+                            </div>
+                        }
+
+                        @if (PreviewTemplate.PreviewImages.Count > 0)
+                        {
+                            <img src="@PreviewTemplate.PreviewImages[0]" alt="@PreviewTemplate.Name full preview" class="template-selection-preview-image" />
+                        }
+                    }
+                </aside>
+            </section>
+
+            <footer class="template-selection-modal-footer">
+                <button type="button"
+                        class="btn btn-primary"
+                        data-testid="confirm-template"
+                        disabled="@(PendingSelection is null)"
+                        @onclick="HandleConfirmAsync">
+                    Select Template
+                </button>
+            </footer>
+        </div>
+    </div>
+}
+
+<style>
+    .template-selection-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1040;
+        padding: 1rem;
+    }
+
+    .template-selection-modal-dialog {
+        background: #fff;
+        border-radius: 0.5rem;
+        width: min(1100px, 100%);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .template-selection-modal-header,
+    .template-selection-modal-footer {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .template-selection-modal-footer {
+        border-bottom: 0;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .template-selection-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .template-selection-modal-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .template-selection-modal-close {
+        background: transparent;
+        border: 0;
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .template-selection-modal-body {
+        padding: 1rem;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1rem;
+        overflow-y: auto;
+    }
+
+    .template-selection-group-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .template-selection-group-tab {
+        border: 1px solid #ced4da;
+        background: #fff;
+        border-radius: 999px;
+        padding: 0.375rem 0.875rem;
+        cursor: pointer;
+    }
+
+    .template-selection-group-tab.active {
+        background: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+    }
+
+    .template-selection-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .template-selection-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        text-align: left;
+        background: #fff;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .template-selection-card.selected {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 1px #0d6efd;
+    }
+
+    .template-selection-card img,
+    .template-selection-preview-image {
+        max-width: 100%;
+        border-radius: 0.35rem;
+    }
+
+    .template-selection-card-title {
+        font-weight: 600;
+    }
+
+    .template-selection-card-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .template-selection-preview {
+        border-left: 1px solid #e9ecef;
+        padding-left: 1rem;
+    }
+
+    .template-selection-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .template-selection-tag {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 999px;
+        padding: 0.1rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .template-selection-empty {
+        margin: 0;
+        color: #6c757d;
+    }
+</style>

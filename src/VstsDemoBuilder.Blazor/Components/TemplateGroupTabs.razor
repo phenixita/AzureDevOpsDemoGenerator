@@ -1,0 +1,27 @@
+<div class="d-flex flex-wrap gap-2" role="tablist" aria-label="Template groups">
+    @foreach (var groupName in GroupNames)
+    {
+        <button type="button"
+                class="btn btn-sm rounded-pill @(IsActive(groupName) ? "btn-primary active" : "btn-outline-primary")"
+                data-group="@groupName"
+                @onclick="() => OnGroupChanged.InvokeAsync(groupName)">
+            @groupName
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<string> GroupNames { get; set; } = [];
+
+    [Parameter]
+    public string ActiveGroup { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnGroupChanged { get; set; }
+
+    private bool IsActive(string groupName)
+    {
+        return string.Equals(groupName, ActiveGroup, StringComparison.OrdinalIgnoreCase);
+    }
+}

@@ -23,22 +23,51 @@
             </div>
         }
 
-        <EditForm Model="@_formModel" OnValidSubmit="HandleValidSubmit">
+        <EditForm EditContext="@_editContext" OnValidSubmit="HandleValidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger mb-3" />
 
             <!-- Template Selection -->
             <div class="mb-3">
-                <label for="template" class="form-label">Select Template</label>
-                <InputSelect id="template" class="form-select" @bind-Value="_formModel.TemplateFolder" @onchange="OnTemplateChanged">
-                    <option value="">-- Select Template --</option>
-                    @foreach (var template in _templates)
-                    {
-                        <option value="@template.TemplateFolder">@template.Name</option>
-                    }
-                </InputSelect>
-                <ValidationMessage For="@(() => _formModel.TemplateFolder)" class="text-danger" />
+                <label class="form-label">Select Template</label>
+
+                @if (_confirmedTemplate is null)
+                {
+                    <div class="border rounded p-3 bg-light-subtle mb-2">
+                        <p class="mb-0 text-secondary">No template selected yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="border rounded p-3 mb-2">
+                        <div class="d-flex align-items-start gap-3">
+                            @if (!string.IsNullOrWhiteSpace(_confirmedTemplate.ImageUrl))
+                            {
+                                <img src="@_confirmedTemplate.ImageUrl" alt="@_confirmedTemplate.Name preview" style="width: 88px; height: 88px; object-fit: cover; border-radius: 0.35rem;" />
+                            }
+                            <div>
+                                <h5 class="mb-1">@_confirmedTemplate.Name</h5>
+                                @if (!string.IsNullOrWhiteSpace(_confirmedTemplate.Description))
+                                {
+                                    <p class="mb-0 text-secondary">@_confirmedTemplate.Description</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <button type="button" id="template" class="btn btn-outline-primary" @onclick="OpenTemplateSelectionModal">
+                    Choose template
+                </button>
+                <ValidationMessage For="@(() => _formModel.TemplateFolder)" class="text-danger mt-2 d-block" />
             </div>
+
+            @if (!string.IsNullOrWhiteSpace(_infoMessageHtml))
+            {
+                <div class="alert alert-info" role="status">
+                    @((MarkupString)_infoMessageHtml)
+                </div>
+            }
 
             <!-- Project Name -->
             <div class="mb-3">
@@ -114,16 +143,34 @@
     </section>
 </main>
 
+<TemplateSelectionModal
+    IsOpen="@_isModalOpen"
+    Groups="@_templateGroups"
+    PendingSelection="@_pendingTemplate"
+    OnClose="HandleTemplateModalCloseAsync"
+    OnTemplateClicked="HandleTemplateClickedAsync"
+    OnConfirm="HandleTemplateConfirmedAsync" />
+
 @code {
     private ProjectCreateFormModel _formModel = new();
+    private EditContext _editContext = null!;
     private List<string> _organizations = [];
-    private List<TemplateCatalogItem> _templates = [];
+    private List<TemplateCatalogGroup> _templateGroups = [];
     private List<TemplateParameterDefinition> _currentTemplateParameters = [];
     private bool _isSubmitting = false;
     private string? _trackingId;
     private string? _sessionError;
     private bool _showSuccess = false;
     private string? _errorMessage;
+    private bool _isModalOpen;
+    private TemplateCatalogItem? _pendingTemplate;
+    private TemplateCatalogItem? _confirmedTemplate;
+    private string? _infoMessageHtml;
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(_formModel);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -138,26 +185,90 @@
             }
         }
 
-        _templates = await TemplateCatalogService.GetAllTemplatesAsync();
+        _templateGroups = await TemplateCatalogService.GetTemplateGroupsAsync();
     }
 
-    private async Task OnTemplateChanged(ChangeEventArgs e)
+    private void OpenTemplateSelectionModal()
     {
-        var templateFolder = e.Value?.ToString();
-        _formModel.TemplateFolder = templateFolder ?? string.Empty;
+        _pendingTemplate = _confirmedTemplate ?? _templateGroups.SelectMany(group => group.Templates).FirstOrDefault();
+        UpdatePendingTemplateFields(_pendingTemplate);
+        _isModalOpen = true;
+    }
+
+    private Task HandleTemplateClickedAsync(TemplateCatalogItem template)
+    {
+        _pendingTemplate = template;
+        UpdatePendingTemplateFields(template);
+        return Task.CompletedTask;
+    }
+
+    private Task HandleTemplateModalCloseAsync()
+    {
+        _isModalOpen = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleTemplateConfirmedAsync(TemplateCatalogItem template)
+    {
+        var templateChanged = !string.Equals(_confirmedTemplate?.TemplateFolder, template.TemplateFolder, StringComparison.OrdinalIgnoreCase);
+
+        if (templateChanged)
+        {
+            ResetDependentState();
+        }
+
+        _confirmedTemplate = template;
+        _pendingTemplate = template;
+        _formModel.TemplateFolder = template.TemplateFolder;
+        _formModel.TemplateName = template.Name;
+        _formModel.TemplateDescription = template.Description;
+        _formModel.TemplateImageUrl = template.ImageUrl;
+        _infoMessageHtml = string.IsNullOrWhiteSpace(template.MessageHtml) ? null : template.MessageHtml;
+        UpdatePendingTemplateFields(template);
+        _editContext.NotifyFieldChanged(FieldIdentifier.Create(() => _formModel.TemplateFolder));
+
+        _currentTemplateParameters = await TemplateCatalogService.GetTemplateParametersAsync(template.TemplateFolder);
+        foreach (var param in _currentTemplateParameters)
+        {
+            if (templateChanged || !_formModel.Parameters.ContainsKey(param.FieldName))
+            {
+                _formModel.Parameters[param.FieldName] = string.Empty;
+            }
+        }
+
+        _isModalOpen = false;
+    }
+
+    private void ResetDependentState()
+    {
         _currentTemplateParameters.Clear();
         _formModel.Parameters.Clear();
+        _errorMessage = null;
+        _showSuccess = false;
+        _trackingId = null;
+        ResetValidationState();
+    }
 
-        if (string.IsNullOrWhiteSpace(templateFolder))
+    private void ResetValidationState()
+    {
+        _editContext = new EditContext(_formModel);
+    }
+
+    private void UpdatePendingTemplateFields(TemplateCatalogItem? template)
+    {
+        if (template is null)
         {
+            _formModel.PendingTemplateFolder = null;
+            _formModel.PendingTemplateName = null;
+            _formModel.PendingTemplateDescription = null;
+            _formModel.PendingTemplateImageUrl = null;
             return;
         }
 
-        _currentTemplateParameters = await TemplateCatalogService.GetTemplateParametersAsync(templateFolder);
-        foreach (var param in _currentTemplateParameters)
-        {
-            _formModel.Parameters[param.FieldName] = string.Empty;
-        }
+        _formModel.PendingTemplateFolder = template.TemplateFolder;
+        _formModel.PendingTemplateName = template.Name;
+        _formModel.PendingTemplateDescription = template.Description;
+        _formModel.PendingTemplateImageUrl = template.ImageUrl;
     }
 
     private async Task HandleValidSubmit()

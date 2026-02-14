@@ -8,6 +8,20 @@ public class ProjectCreateFormModel
 {
     [Required(ErrorMessage = "Please select a template")]
     public string? TemplateFolder { get; set; }
+
+    public string? TemplateName { get; set; }
+
+    public string? TemplateDescription { get; set; }
+
+    public string? TemplateImageUrl { get; set; }
+
+    public string? PendingTemplateFolder { get; set; }
+
+    public string? PendingTemplateName { get; set; }
+
+    public string? PendingTemplateDescription { get; set; }
+
+    public string? PendingTemplateImageUrl { get; set; }
     
     [Required(ErrorMessage = "Project name is required")]
     [ProjectName]

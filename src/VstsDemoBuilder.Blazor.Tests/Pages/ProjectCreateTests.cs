@@ -26,6 +26,10 @@ public class ProjectCreateTests : TestContext
         Services.AddSingleton<IHttpContextAccessor>(_httpContextAccessor);
 
         _mockCatalogService
+            .Setup(x => x.GetTemplateGroupsAsync())
+            .ReturnsAsync(new List<TemplateCatalogGroup>());
+
+        _mockCatalogService
             .Setup(x => x.GetAllTemplatesAsync())
             .ReturnsAsync(new List<TemplateCatalogItem>());
 
@@ -48,6 +52,23 @@ public class ProjectCreateTests : TestContext
     }
 
     [Fact]
+    public void Should_Open_Template_Modal_When_Choose_Template_Clicked()
+    {
+        SetSession();
+        SeedTemplates(new TemplateCatalogItem { Name = "Template A", TemplateFolder = "template-a" });
+
+        var cut = RenderComponent<ProjectCreate>();
+
+        OpenTemplateModal(cut);
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.NotEmpty(cut.FindAll(".template-selection-modal-backdrop"));
+            Assert.Contains("Choose template", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
     public void Should_Block_Submission_When_Organization_Not_Selected()
     {
         SetSession();
@@ -55,7 +76,7 @@ public class ProjectCreateTests : TestContext
 
         var cut = RenderComponent<ProjectCreate>();
 
-        cut.Find("#template").Change("template-a");
+        ConfirmTemplateSelection(cut, "template-a");
         cut.Find("#projectName").Change("Test Project");
 
         cut.Find("form").Submit();
@@ -80,7 +101,7 @@ public class ProjectCreateTests : TestContext
 
         var cut = RenderComponent<ProjectCreate>();
 
-        cut.Find("#template").Change("template-a");
+        ConfirmTemplateSelection(cut, "template-a");
         cut.Find("#organization").Change("org-alpha");
         cut.Find("#projectName").Change("CON");
 
@@ -121,13 +142,66 @@ public class ProjectCreateTests : TestContext
 
         var cut = RenderComponent<ProjectCreate>();
 
-        cut.Find("#template").Change("test-template");
+        ConfirmTemplateSelection(cut, "test-template");
 
         cut.WaitForAssertion(() =>
         {
             Assert.Contains("Template Parameters", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("API Key", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Region", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
+    public void Should_Update_Template_Summary_After_Confirmation()
+    {
+        SetSession();
+
+        var selectedTemplate = new TemplateCatalogItem
+        {
+            Name = "Architecture Hub",
+            TemplateFolder = "architecture-hub",
+            Description = "Architecture planning and review workflows",
+            ImageUrl = "https://example.org/template-architecture.png"
+        };
+
+        SeedTemplates(selectedTemplate);
+
+        var cut = RenderComponent<ProjectCreate>();
+
+        ConfirmTemplateSelection(cut, "architecture-hub");
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Architecture Hub", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Architecture planning and review workflows", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("https://example.org/template-architecture.png", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
+    public void Should_Display_Info_Message_When_Template_Has_Message_Html()
+    {
+        SetSession();
+
+        var templateWithMessage = new TemplateCatalogItem
+        {
+            Name = "Contoso Secure",
+            TemplateFolder = "contoso-secure",
+            MessageHtml = "<strong>Important:</strong> Install required extensions first."
+        };
+
+        SeedTemplates(templateWithMessage);
+
+        var cut = RenderComponent<ProjectCreate>();
+
+        ConfirmTemplateSelection(cut, "contoso-secure");
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Important:", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Install required extensions first", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.NotEmpty(cut.FindAll(".alert.alert-info"));
         });
     }
 
@@ -148,7 +222,7 @@ public class ProjectCreateTests : TestContext
 
         var cut = RenderComponent<ProjectCreate>();
 
-        cut.Find("#template").Change("valid-template");
+        ConfirmTemplateSelection(cut, "valid-template");
         cut.Find("#projectName").Change("Valid Project Name");
         cut.Find("#organization").Change("org-alpha");
 
@@ -180,7 +254,7 @@ public class ProjectCreateTests : TestContext
 
         var cut = RenderComponent<ProjectCreate>();
 
-        cut.Find("#template").Change("valid-template");
+        ConfirmTemplateSelection(cut, "valid-template");
         cut.Find("#projectName").Change("Valid Project Name");
         cut.Find("#organization").Change("org-alpha");
 
@@ -199,7 +273,7 @@ public class ProjectCreateTests : TestContext
     }
 
     [Fact]
-    public void Should_Clear_Parameters_When_Template_Changed()
+    public void Should_Clear_Previously_Entered_Parameter_Values_When_Confirming_Different_Template()
     {
         SetSession();
         SeedTemplates(
@@ -222,26 +296,89 @@ public class ProjectCreateTests : TestContext
 
         var cut = RenderComponent<ProjectCreate>();
 
-        cut.Find("#template").Change("template-a");
+        ConfirmTemplateSelection(cut, "template-a");
         cut.WaitForAssertion(() => Assert.Contains("API Key", cut.Markup, StringComparison.OrdinalIgnoreCase));
 
         var apiKeyInput = cut.FindAll("input[type='text']").Last();
-        apiKeyInput.Change("secret");
+        apiKeyInput.Change("secret-value-from-template-a");
 
-        cut.Find("#template").Change("template-b");
+        ConfirmTemplateSelection(cut, "template-b");
 
         cut.WaitForAssertion(() =>
         {
             Assert.Contains("Region", cut.Markup, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("API Key", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("secret-value-from-template-a", cut.Markup, StringComparison.OrdinalIgnoreCase);
+        });
+    }
+
+    [Fact]
+    public void Should_Not_Change_Confirmed_Template_When_Modal_Closed_Without_Confirm()
+    {
+        SetSession();
+        SeedTemplates(
+            new TemplateCatalogItem { Name = "Template A", TemplateFolder = "template-a", Description = "A description" },
+            new TemplateCatalogItem { Name = "Template B", TemplateFolder = "template-b", Description = "B description" });
+
+        var cut = RenderComponent<ProjectCreate>();
+
+        ConfirmTemplateSelection(cut, "template-a");
+
+        OpenTemplateModal(cut);
+        SelectTemplateInModal(cut, "template-b");
+        cut.Find("button.template-selection-modal-close").Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Template A", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("A description", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("B description", cut.Markup, StringComparison.OrdinalIgnoreCase);
+            Assert.Empty(cut.FindAll(".template-selection-modal-backdrop"));
         });
     }
 
     private void SeedTemplates(params TemplateCatalogItem[] templates)
     {
+        var templateList = templates.ToList();
+
+        _mockCatalogService
+            .Setup(x => x.GetTemplateGroupsAsync())
+            .ReturnsAsync(new List<TemplateCatalogGroup>
+            {
+                new()
+                {
+                    GroupName = "Default",
+                    Templates = templateList
+                }
+            });
+
         _mockCatalogService
             .Setup(x => x.GetAllTemplatesAsync())
-            .ReturnsAsync(templates.ToList());
+            .ReturnsAsync(templateList);
+    }
+
+    private static void OpenTemplateModal(IRenderedComponent<ProjectCreate> cut)
+    {
+        cut.Find("#template").Click();
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".template-selection-modal-backdrop")));
+    }
+
+    private static void SelectTemplateInModal(IRenderedComponent<ProjectCreate> cut, string templateFolder)
+    {
+        cut.Find($"button[data-template-folder='{templateFolder}']").Click();
+    }
+
+    private static void ConfirmTemplate(IRenderedComponent<ProjectCreate> cut)
+    {
+        cut.Find("button[data-testid='confirm-template']").Click();
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".template-selection-modal-backdrop")));
+    }
+
+    private static void ConfirmTemplateSelection(IRenderedComponent<ProjectCreate> cut, string templateFolder)
+    {
+        OpenTemplateModal(cut);
+        SelectTemplateInModal(cut, templateFolder);
+        ConfirmTemplate(cut);
     }
 
     private void SetSession(

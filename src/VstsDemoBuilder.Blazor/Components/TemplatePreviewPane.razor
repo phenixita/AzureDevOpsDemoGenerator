@@ -1,0 +1,51 @@
+@using VstsDemoBuilder.Blazor.Models
+
+@if (Template is null)
+{
+    <div class="border rounded p-4 text-muted bg-light">
+        <h5 class="mb-2">Select a template</h5>
+        <p class="mb-0">Choose a template card to preview details.</p>
+    </div>
+}
+else
+{
+    <div class="border rounded p-3 d-flex flex-column gap-3">
+        @if (!string.IsNullOrWhiteSpace(GetPreviewImageUrl()))
+        {
+            <img src="@GetPreviewImageUrl()" class="img-fluid rounded" alt="@Template.Name" />
+        }
+
+        <div>
+            <h4 class="mb-2">@Template.Name</h4>
+            <div class="text-body-secondary">@((MarkupString)Template.Description)</div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Template.MessageHtml))
+        {
+            <div class="alert alert-info mb-0" role="status">
+                <strong>Template note:</strong>
+                <div>@((MarkupString)Template.MessageHtml)</div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public TemplateCatalogItem? Template { get; set; }
+
+    private string? GetPreviewImageUrl()
+    {
+        if (Template is null)
+        {
+            return null;
+        }
+
+        if (Template.PreviewImages.Count > 0 && !string.IsNullOrWhiteSpace(Template.PreviewImages[0]))
+        {
+            return Template.PreviewImages[0];
+        }
+
+        return Template.ImageUrl;
+    }
+}

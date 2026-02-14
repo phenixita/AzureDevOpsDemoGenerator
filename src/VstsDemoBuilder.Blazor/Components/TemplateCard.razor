@@ -1,0 +1,59 @@
+@using VstsDemoBuilder.Blazor.Models
+
+<button type="button"
+        class="card h-100 text-start border @(IsSelected ? "border-primary template-card-selected" : "border-light")"
+        @onclick="HandleClick">
+    @if (!string.IsNullOrWhiteSpace(Template.ImageUrl))
+    {
+        <img src="@Template.ImageUrl" class="card-img-top" alt="@Template.Name" />
+    }
+
+    <div class="card-body d-flex flex-column gap-2">
+        <h5 class="card-title mb-1">@Template.Name</h5>
+
+        @if (Template.Tags.Count > 0)
+        {
+            <div class="d-flex flex-wrap gap-1">
+                @foreach (var tag in Template.Tags)
+                {
+                    <span class="badge rounded-pill text-bg-secondary">@tag</span>
+                }
+            </div>
+        }
+
+        <p class="card-text text-muted small mb-0">@GetTruncatedDescription(Template.Description)</p>
+    </div>
+</button>
+
+@code {
+    private const int DescriptionMaxLength = 140;
+
+    [Parameter, EditorRequired]
+    public TemplateCatalogItem Template { get; set; } = default!;
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+    private Task HandleClick()
+    {
+        return OnClick.InvokeAsync();
+    }
+
+    private static string GetTruncatedDescription(string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return string.Empty;
+        }
+
+        if (description.Length <= DescriptionMaxLength)
+        {
+            return description;
+        }
+
+        return $"{description[..DescriptionMaxLength].TrimEnd()}...";
+    }
+}

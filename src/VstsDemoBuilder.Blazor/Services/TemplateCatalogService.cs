@@ -22,7 +22,7 @@ public sealed class TemplateCatalogService : ITemplateCatalogService
         _logger = logger;
     }
 
-    public async Task<List<TemplateCatalogItem>> GetAllTemplatesAsync()
+    public async Task<List<TemplateCatalogGroup>> GetTemplateGroupsAsync()
     {
         var templateSettingPath = Path.Combine(_environment.ContentRootPath, "Templates", "TemplateSetting.json");
         if (!File.Exists(templateSettingPath))
@@ -40,16 +40,19 @@ public sealed class TemplateCatalogService : ITemplateCatalogService
                 return [];
             }
 
-            return templateSetting.GroupwiseTemplates
-                .SelectMany(group => group.Template ?? [])
-                .Select(MapTemplate)
-                .ToList();
+            return MapTemplateGroups(templateSetting);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load template catalog from {Path}", templateSettingPath);
+            _logger.LogWarning(ex, "Failed to load grouped template catalog from {Path}", templateSettingPath);
             return [];
         }
+    }
+
+    public async Task<List<TemplateCatalogItem>> GetAllTemplatesAsync()
+    {
+        var groups = await GetTemplateGroupsAsync().ConfigureAwait(false);
+        return groups.SelectMany(group => group.Templates).ToList();
     }
 
     public async Task<List<TemplateParameterDefinition>> GetTemplateParametersAsync(string templateFolder)
@@ -101,8 +104,90 @@ public sealed class TemplateCatalogService : ITemplateCatalogService
             TemplateFolder = template.TemplateFolder ?? string.Empty,
             Description = template.Description ?? string.Empty,
             Tags = template.Tags ?? [],
+            MessageHtml = template.Message ?? string.Empty,
+            PreviewImages = NormalizeImagePaths(template.PreviewImages),
             ImageUrl = NormalizeImagePath(imageValue)
         };
+    }
+
+    private static List<TemplateCatalogGroup> MapTemplateGroups(TemplateSettingRoot templateSetting)
+    {
+        var orderedGroupNames = (templateSetting.Groups ?? [])
+            .Concat(templateSetting.PrivateGroups ?? [])
+            .Where(groupName => !string.IsNullOrWhiteSpace(groupName))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var result = new List<TemplateCatalogGroup>();
+        var existingGroups = templateSetting.GroupwiseTemplates ?? [];
+        var processedGroupNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var groupName in orderedGroupNames)
+        {
+            var group = existingGroups.FirstOrDefault(candidate => string.Equals(candidate.Groups, groupName, StringComparison.OrdinalIgnoreCase));
+            if (group == null)
+            {
+                continue;
+            }
+
+            var templates = (group.Template ?? [])
+                .Where(ShouldIncludeTemplate)
+                .Select(MapTemplate)
+                .ToList();
+
+            if (templates.Count == 0)
+            {
+                continue;
+            }
+
+            result.Add(new TemplateCatalogGroup
+            {
+                GroupName = groupName,
+                Templates = templates
+            });
+            processedGroupNames.Add(groupName);
+        }
+
+        foreach (var group in existingGroups)
+        {
+            if (string.IsNullOrWhiteSpace(group.Groups) || processedGroupNames.Contains(group.Groups))
+            {
+                continue;
+            }
+
+            var templates = (group.Template ?? [])
+                .Where(ShouldIncludeTemplate)
+                .Select(MapTemplate)
+                .ToList();
+
+            if (templates.Count == 0)
+            {
+                continue;
+            }
+
+            result.Add(new TemplateCatalogGroup
+            {
+                GroupName = group.Groups,
+                Templates = templates
+            });
+        }
+
+        return result;
+    }
+
+    private static bool ShouldIncludeTemplate(TemplateSettingTemplate template)
+    {
+        return !string.IsNullOrWhiteSpace(template.TemplateFolder) &&
+               !template.TemplateFolder.Contains("<iframe", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static List<string> NormalizeImagePaths(List<string>? values)
+    {
+        return (values ?? [])
+            .Select(NormalizeImagePath)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!)
+            .ToList();
     }
 
     private static string? NormalizeImagePath(string? value)
@@ -122,12 +207,21 @@ public sealed class TemplateCatalogService : ITemplateCatalogService
 
     private sealed class TemplateSettingRoot
     {
+        [JsonPropertyName("Groups")]
+        public List<string>? Groups { get; set; }
+
+        [JsonPropertyName("PrivateGroups")]
+        public List<string>? PrivateGroups { get; set; }
+
         [JsonPropertyName("GroupwiseTemplates")]
         public List<TemplateSettingGroup> GroupwiseTemplates { get; set; } = [];
     }
 
     private sealed class TemplateSettingGroup
     {
+        [JsonPropertyName("Groups")]
+        public string Groups { get; set; } = string.Empty;
+
         [JsonPropertyName("Template")]
         public List<TemplateSettingTemplate>? Template { get; set; }
     }
@@ -141,6 +235,10 @@ public sealed class TemplateCatalogService : ITemplateCatalogService
         public string? Description { get; set; }
 
         public List<string>? Tags { get; set; }
+
+        public string? Message { get; set; }
+
+        public List<string>? PreviewImages { get; set; }
 
         public string? Icon { get; set; }
 
