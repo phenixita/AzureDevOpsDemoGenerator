@@ -1,22 +1,20 @@
-﻿using System;
-using System.Web;
-using System.Web.Mvc;
-using System.Web.Routing;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace VstsDemoBuilder.Controllers
 {
     public class SessonTimeoutAttribute : ActionFilterAttribute
     {
-        public override void OnActionExecuting(ActionExecutingContext filterContext)
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
-            HttpContext ctx = HttpContext.Current;
-            if (HttpContext.Current.Session["visited"] == null)
+            if (context.HttpContext.Session.GetString("visited") == null)
             {
-                //filterContext.Result = new RedirectResult("../account/SessionOutReturn", true);
-                filterContext.Result = new RedirectToRouteResult(new RouteValueDictionary(new { controller = "account", action = "SessionOutReturn" }));
+                context.Result = new RedirectToActionResult("SessionOutReturn", "Account", null);
                 return;
             }
-            base.OnActionExecuting(filterContext);
+
+            base.OnActionExecuting(context);
         }
     }
 }

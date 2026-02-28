@@ -1,10 +1,11 @@
-﻿using log4net;
+using log4net;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
-using System.Web.Hosting;
-using System.Web.Mvc;
+using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.Models;
 using VstsDemoBuilder.ServiceInterfaces;
 using VstsDemoBuilder.Services;
@@ -12,7 +13,7 @@ using VstsDemoBuilder.Services;
 namespace VstsDemoBuilder.Controllers
 {
 
-    public class AccountController : Controller
+    public class AccountController : CompatController
     {
         private readonly AccessDetails accessDetails = new AccessDetails();
         private TemplateSelection.Templates templates = new TemplateSelection.Templates();
@@ -54,8 +55,10 @@ namespace VstsDemoBuilder.Controllers
                 Session["EnableExtractor"] = model.EnableExtractor;
             }
 
-            var browser = Request.Browser.Type;
-            if (browser.Contains("InternetExplorer"))
+            var userAgent = Request.Headers.UserAgent.ToString();
+            if (!string.IsNullOrWhiteSpace(userAgent) &&
+                (userAgent.Contains("MSIE", StringComparison.OrdinalIgnoreCase) ||
+                 userAgent.Contains("Trident", StringComparison.OrdinalIgnoreCase)))
             {
                 return RedirectToAction("Unsupported_browser", "Account");
             }
@@ -164,11 +167,18 @@ namespace VstsDemoBuilder.Controllers
             try
             {
                 Session["visited"] = "1";
-                string url = "https://app.vssps.visualstudio.com/oauth2/authorize?client_id={0}&response_type=Assertion&state=User1&scope={1}&redirect_uri={2}";
-                string redirectUrl = System.Configuration.ConfigurationManager.AppSettings["RedirectUri"];
+                string tenantId = System.Configuration.ConfigurationManager.AppSettings["TenantId"] ?? "common";
                 string clientId = System.Configuration.ConfigurationManager.AppSettings["ClientId"];
-                string AppScope = System.Configuration.ConfigurationManager.AppSettings["appScope"];
-                url = string.Format(url, clientId, AppScope, redirectUrl);
+                string redirectUrl = System.Configuration.ConfigurationManager.AppSettings["RedirectUri"];
+                string appScope = System.Configuration.ConfigurationManager.AppSettings["appScope"];
+
+                // Microsoft Entra ID OAuth 2.0 authorization code flow
+                string url = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize" +
+                    $"?client_id={Uri.EscapeDataString(clientId)}" +
+                    "&response_type=code" +
+                    $"&redirect_uri={Uri.EscapeDataString(redirectUrl)}" +
+                    $"&scope={Uri.EscapeDataString(appScope)}" +
+                    "&state=User1";
                 return Redirect(url);
             }
             catch (Exception ex)
@@ -187,7 +197,8 @@ namespace VstsDemoBuilder.Controllers
         public ActionResult SignOut()
         {
             Session.Clear();
-            return Redirect("https://app.vssps.visualstudio.com/_signout");
+            string tenantId = System.Configuration.ConfigurationManager.AppSettings["TenantId"] ?? "common";
+            return Redirect($"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/logout");
         }
 
         [HttpGet]
@@ -217,7 +228,7 @@ namespace VstsDemoBuilder.Controllers
                     privateTemplate.responseMessage = templateService.checkSelectedTemplateIsPrivate(privateTemplate.privateTemplatePath);
                     if (privateTemplate.responseMessage != "SUCCESS")
                     {
-                        var templatepath = HostingEnvironment.MapPath("~") + @"\PrivateTemplates\" + templateName.ToLower().Replace(".zip", "").Trim();
+                        var templatepath = AppPath.MapPath("~") + @"\PrivateTemplates\" + templateName.ToLower().Replace(".zip", "").Trim();
                         if (Directory.Exists(templatepath))
                             Directory.Delete(templatepath, true);
                     }

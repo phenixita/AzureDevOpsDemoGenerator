@@ -1,4 +1,4 @@
-﻿using Common.Logging;
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Web.Hosting;
 using VstsDemoBuilder.Extensions;
+using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.Models;
 using VstsDemoBuilder.ServiceInterfaces;
 using VstsRestAPI;
@@ -199,7 +199,7 @@ namespace VstsDemoBuilder.Services
         #region GENERATE ARTIFACTS
         public string[] GenerateTemplateArifacts(Project model)
         {
-            extractedTemplatePath = HostingEnvironment.MapPath("~") + @"ExtractedTemplate\";
+            extractedTemplatePath = AppPath.MapPath("~") + @"ExtractedTemplate\";
 
             if (Directory.Exists(extractedTemplatePath))
             {
@@ -227,7 +227,7 @@ namespace VstsDemoBuilder.Services
                 AddMessage(model.id, "Iterations Definition");
             }
             string extractedFolderName = extractedTemplatePath + model.ProjectName;
-            string filePathToRead = HostingEnvironment.MapPath("~") + @"\\PreSetting";
+            string filePathToRead = AppPath.MapPath("~") + @"\\PreSetting";
 
             string projectSetting = "";
             projectSetting = filePathToRead + "\\ProjectSettings.json";
@@ -736,7 +736,7 @@ namespace VstsDemoBuilder.Services
             {
                 foreach (var repo in repos.value)
                 {
-                    string preSettingPath = HostingEnvironment.MapPath("~") + @"PreSetting";
+                    string preSettingPath = AppPath.MapPath("~") + @"PreSetting";
                     string templateFolderPath = extractedTemplatePath + appConfig.RepoConfig.Project;
                     string host = appConfig.RepoConfig.UriString + appConfig.RepoConfig.Project;
                     string sourceCodeJson = File.ReadAllText(preSettingPath + "\\ImportSourceCode.json");
@@ -888,7 +888,7 @@ namespace VstsDemoBuilder.Services
                             {
                                 foreach (var step in steps)
                                 {
-                                    string keyConfig = File.ReadAllText(HostingEnvironment.MapPath("~") + @"\\Templates\EndpointKeyConfig.json");
+                                    string keyConfig = File.ReadAllText(AppPath.MapPath("~") + @"\\Templates\EndpointKeyConfig.json");
                                     KeyConfig.Keys keyC = new KeyConfig.Keys();
                                     keyC = JsonConvert.DeserializeObject<KeyConfig.Keys>(keyConfig);
                                     foreach (var key in keyC.keys)
@@ -925,7 +925,7 @@ namespace VstsDemoBuilder.Services
                     string url = def["repository"]["url"].ToString();
                     if (url != "")
                     {
-                        string endPointString = File.ReadAllText(HostingEnvironment.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
+                        string endPointString = File.ReadAllText(AppPath.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
                         endPointString = endPointString.Replace("$GitHubURL$", url).Replace("$Name$", "GitHub_" + randStr);
 
                         if (!Directory.Exists(extractedTemplatePath + appConfig.RepoConfig.Project + "\\ServiceEndpoints"))
@@ -944,7 +944,7 @@ namespace VstsDemoBuilder.Services
                     Guid g = Guid.NewGuid();
                     string randStr = g.ToString().Substring(0, 8);
                     string url = def["repository"]["url"].ToString();
-                    string endPointString = File.ReadAllText(HostingEnvironment.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
+                    string endPointString = File.ReadAllText(AppPath.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
                     endPointString = endPointString.Replace("$GitHubURL$", url).Replace("$Name$", "GitHub_" + randStr);
 
                     if (!Directory.Exists(extractedTemplatePath + appConfig.RepoConfig.Project + "\\ServiceEndpoints"))
@@ -1062,7 +1062,7 @@ namespace VstsDemoBuilder.Services
                 }
                 if (ymlRepoUrl != "")
                 {
-                    string endPointString = File.ReadAllText(HostingEnvironment.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
+                    string endPointString = File.ReadAllText(AppPath.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
                     endPointString = endPointString.Replace("$GitHubURL$", ymlRepoUrl).Replace("$Name$", "GitHub_" + randStr);
 
                     if (!Directory.Exists(extractedTemplatePath + appConfig.BuildDefinitionConfig.Project + "\\ServiceEndpoints"))
@@ -1120,7 +1120,7 @@ namespace VstsDemoBuilder.Services
                 var ymlRepoUrl = def["repository"]["url"].ToString();
                 if (ymlRepoUrl != "")
                 {
-                    string endPointString = File.ReadAllText(HostingEnvironment.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
+                    string endPointString = File.ReadAllText(AppPath.MapPath("~") + @"PreSetting\\GitHubEndPoint.json");
                     endPointString = endPointString.Replace("$GitHubURL$", ymlRepoUrl).Replace("$Name$", "GitHub_" + randStr);
                     if (!Directory.Exists(extractedTemplatePath + appConfig.BuildDefinitionConfig.Project + "\\ServiceEndpoints"))
                     {
@@ -1286,7 +1286,7 @@ namespace VstsDemoBuilder.Services
                                         foreach (var flow in workflow)
                                         {
                                             var input = flow["inputs"];
-                                            string keyConfig = File.ReadAllText(HostingEnvironment.MapPath("~") + @"\\Templates\EndpointKeyConfig.json");
+                                            string keyConfig = File.ReadAllText(AppPath.MapPath("~") + @"\\Templates\EndpointKeyConfig.json");
                                             KeyConfig.Keys keyC = new KeyConfig.Keys();
                                             keyC = JsonConvert.DeserializeObject<KeyConfig.Keys>(keyConfig);
                                             foreach (var key in keyC.keys)
@@ -1641,3 +1641,4 @@ namespace VstsDemoBuilder.Services
         #endregion END GENERATE ARTIFACTS
     }
 }
+

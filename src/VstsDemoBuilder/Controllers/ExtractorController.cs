@@ -1,10 +1,12 @@
-﻿using log4net;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.Extensions;
 using VstsDemoBuilder.ExtractorModels;
 using VstsDemoBuilder.Models;
@@ -19,7 +21,7 @@ using VstsRestAPI.WorkItemAndTracking;
 namespace VstsDemoBuilder.Controllers
 {
 
-    public class ExtractorController : Controller
+    public class ExtractorController : CompatController
     {
         
         private delegate string[] ProcessEnvironment(Project model);        
@@ -42,7 +44,7 @@ namespace VstsDemoBuilder.Controllers
         [AllowAnonymous]
         public ContentResult GetCurrentProgress(string id)
         {
-            this.ControllerContext.HttpContext.Response.AddHeader("cache-control", "no-cache");
+            Response.Headers["cache-control"] = "no-cache";
             var currentProgress = ExtractorService.GetStatusMessage(id).ToString();
             return Content(currentProgress);
         }
@@ -132,7 +134,7 @@ namespace VstsDemoBuilder.Controllers
                     {
                         projectResult.errmsg = "No projects found!";
                     }
-                    return Json(projectResult, JsonRequestBehavior.AllowGet);
+                    return Json(projectResult);
                 }
             }
             catch (Exception ex)
@@ -141,7 +143,7 @@ namespace VstsDemoBuilder.Controllers
                 projectResult.errmsg = ex.Message.ToString();
                 string message = ex.Message.ToString();
             }
-            return Json(projectResult, JsonRequestBehavior.AllowGet);
+            return Json(projectResult);
         }
 
         //Get Project Properties to knwo which process template it is following
@@ -162,7 +164,7 @@ namespace VstsDemoBuilder.Controllers
                 {
                     if (load.TypeClass != null)
                     {
-                        return Json(load, JsonRequestBehavior.AllowGet);
+                        return Json(load);
                     }
                 }
             }
@@ -170,7 +172,7 @@ namespace VstsDemoBuilder.Controllers
             {
                 ExtractorService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\n" + ex.StackTrace + "\n");
             }
-            return new JsonResult();
+            return Json(new { });
 
         }
 
@@ -262,7 +264,7 @@ namespace VstsDemoBuilder.Controllers
             analysis.ReleaseDefCount = extractorService.GetReleaseDefinitionCount(appConfig);
 
             analysis.ErrorMessages = es.errorMessages;
-            return Json(analysis, JsonRequestBehavior.AllowGet);
+            return Json(analysis);
         }
         #endregion
 
@@ -272,7 +274,7 @@ namespace VstsDemoBuilder.Controllers
         [AllowAnonymous]
         public bool StartEnvironmentSetupProcess(Project model)
         {
-            System.Web.HttpContext.Current.Session["Project"] = model.ProjectName;
+            Session["Project"] = model.ProjectName;
             ExtractorService.AddMessage(model.id, string.Empty);
             ExtractorService.AddMessage(model.id.ErrorId(), string.Empty);
             ProcessEnvironment processTask = new ProcessEnvironment(extractorService.GenerateTemplateArifacts);
@@ -462,7 +464,7 @@ namespace VstsDemoBuilder.Controllers
                 }
                 // download the constructed zip
                 Directory.Delete(filePath, true);
-                Response.AddHeader("Content-Disposition", "attachment; filename=" + fileName + ".zip");
+                Response.Headers["Content-Disposition"] = "attachment; filename=" + fileName + ".zip";
                 return File(fileBytes, "application/zip");
             }
             catch (Exception ex)
@@ -481,3 +483,4 @@ namespace VstsDemoBuilder.Controllers
         }
     }
 }
+

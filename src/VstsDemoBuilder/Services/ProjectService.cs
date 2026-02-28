@@ -1,5 +1,3 @@
-﻿using GoogleAnalyticsTracker.Simple;
-using GoogleAnalyticsTracker.WebAPI2;
 using log4net;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.ExtensionManagement.WebApi;
@@ -14,9 +12,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Hosting;
-using System.Web.Http;
 using VstsDemoBuilder.Extensions;
+using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.Models;
 using VstsDemoBuilder.ServiceInterfaces;
 using VstsRestAPI;
@@ -64,21 +61,9 @@ namespace VstsDemoBuilder.Services
         public string templateVersion = string.Empty;
         public static string enableExtractor = "";
 
-        public static async void TrackFeature(string API)
+        public static void TrackFeature(string API)
         {
-            SimpleTrackerEnvironment simpleTrackerEnvironment = new SimpleTrackerEnvironment(Environment.OSVersion.Platform.ToString(),
-                                                                        Environment.OSVersion.Version.ToString(),
-                                                                        Environment.OSVersion.VersionString);
-            string GAKey = System.Configuration.ConfigurationManager.AppSettings["AnalyticsKey"];
-            if (!string.IsNullOrEmpty(GAKey))
-            {
-                using (Tracker tracker = new Tracker(GAKey, simpleTrackerEnvironment))
-                {
-                    var response = await tracker.TrackPageViewAsync("My API - Create", API);
-                    bool issuccess = response.Success;
-                }
-            }
-
+            logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t FeatureTracked:\t" + API);
         }
         public static Dictionary<string, string> StatusMessages
         {
@@ -167,7 +152,7 @@ namespace VstsDemoBuilder.Services
             }
             else
             {
-                filePath = string.Format(HostingEnvironment.MapPath("~") + @"\Templates\" + @"{0}\{1}", TemplateName, FileName);
+                filePath = string.Format(AppPath.MapPath("~") + @"\Templates\" + @"{0}\{1}", TemplateName, FileName);
             }
             return filePath;
         }
@@ -355,7 +340,7 @@ namespace VstsDemoBuilder.Services
                 logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
             }
             //create team project
-            string jsonProject = model.ReadJsonFile(HostingEnvironment.MapPath("~") + @"\Templates\" + "CreateProject.json");
+            string jsonProject = model.ReadJsonFile(AppPath.MapPath("~") + @"\Templates\" + "CreateProject.json");
             jsonProject = jsonProject.Replace("$projectName$", model.ProjectName).Replace("$processTemplateId$", processTemplateId);
 
             Projects proj = new Projects(_projectCreationVersion);
@@ -741,7 +726,7 @@ namespace VstsDemoBuilder.Services
             Thread.Sleep(10000); //Adding delay to wait for the repository to create and import from the source
 
             //Create WIKI
-            CreateProjetWiki(HostingEnvironment.MapPath("~") + @"\Templates\", model, _wikiVersion);
+            CreateProjetWiki(AppPath.MapPath("~") + @"\Templates\", model, _wikiVersion);
             CreateCodeWiki(model, _wikiVersion);
 
             List<string> listPullRequestJsonPaths = new List<string>();
@@ -2273,7 +2258,7 @@ namespace VstsDemoBuilder.Services
                 bool isFolderCreated=false;
                 if (!string.IsNullOrEmpty(teamName))
                 {
-                    string createQueryFolderJson = File.ReadAllText(HostingEnvironment.MapPath("~") + @"PreSetting\\CreateQueryFolder.json");
+                    string createQueryFolderJson = File.ReadAllText(AppPath.MapPath("~") + @"PreSetting\\CreateQueryFolder.json");
                     createQueryFolderJson = createQueryFolderJson.Replace("$TeamName$", teamName);
                     QueryResponse createFolderResponse = _newobjQuery.CreateQuery(model.ProjectName, createQueryFolderJson);
                     isFolderCreated=createFolderResponse.id!=null? true : false;
@@ -2643,7 +2628,7 @@ namespace VstsDemoBuilder.Services
         {
             try
             {
-                //string templatesFolder = HostingEnvironment.MapPath("~") + @"\Templates\";
+                //string templatesFolder = AppPath.MapPath("~") + @"\Templates\";
                 string projTemplateFile = GetJsonFilePath(model.IsPrivatePath, model.PrivateTemplatePath, model.SelectedTemplate, "Extensions.json");
                 //string.Format(templatesFolder + @"{0}\Extensions.json", model.SelectedTemplate);
                 if (!(File.Exists(projTemplateFile)))
@@ -2881,15 +2866,13 @@ namespace VstsDemoBuilder.Services
                 }
             }
         }
-        [AllowAnonymous]
-        [HttpPost]
         public string GetTemplateMessage(string TemplateName)
         {
             try
             {
                 string groupDetails = "";
                 TemplateSelection.Templates templates = new TemplateSelection.Templates();
-                string templatesPath = ""; templatesPath = HostingEnvironment.MapPath("~") + @"\Templates\";
+                string templatesPath = ""; templatesPath = AppPath.MapPath("~") + @"\Templates\";
                 if (File.Exists(templatesPath + "TemplateSetting.json"))
                 {
                     groupDetails = File.ReadAllText(templatesPath + @"\TemplateSetting.json");
@@ -3052,7 +3035,7 @@ namespace VstsDemoBuilder.Services
         /// <returns></returns>
         public bool WhereDoseTemplateBelongTo(string templatName)
         {
-            string privatePath = HostingEnvironment.MapPath("~") + @"\PrivateTemplates\";
+            string privatePath = AppPath.MapPath("~") + @"\PrivateTemplates\";
             string privateTemplate = Path.Combine(privatePath, templatName);
 
             if (!Directory.Exists(privatePath))

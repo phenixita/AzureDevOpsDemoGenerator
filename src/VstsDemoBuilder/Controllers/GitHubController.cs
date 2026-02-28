@@ -1,15 +1,16 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Http;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.Models;
-using System.Web;
 using VstsDemoBuilder.Services;
 
 namespace VstsDemoBuilder.Controllers
 {
-    public class GitHubController : Controller
+    public class GitHubController : CompatController
     {
 
         private GitHubAccessDetails accessDetails = new GitHubAccessDetails();
@@ -32,7 +33,7 @@ namespace VstsDemoBuilder.Controllers
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             // Here we get the Code in the Query String, using that we can get access token
             var request = Request;
-            string code = Request.QueryString["code"];
+            string code = Request.Query["code"];
             if (!string.IsNullOrEmpty(code))
             {
 
@@ -95,3 +96,4 @@ namespace VstsDemoBuilder.Controllers
         }
     }
 }
+

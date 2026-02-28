@@ -19,6 +19,7 @@ The following docs provide additional information:
 * [Running the Azure DevOps Demo Generator on your local machine](./docs/Local-Development.md)
 * [Creating custom templates](./docs/Using-The-Template-Extractor.md)
 * [Using the REST APIs](./docs/Azure-DevOps-Demo-Generator-REST-API-Reference.md)
+* [Deploy on Azure App Service Linux (.NET 10)](./docs/Deploy-AppService-Linux-Net10.md)
 * [Limitations](./docs/Limitations.md)
 * [Contributing to this project](./CONTRIBUTING.md)
 * [FAQ](./docs/FAQ.md)

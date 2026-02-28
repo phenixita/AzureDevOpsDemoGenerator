@@ -1,4 +1,5 @@
-﻿@model VstsDemoBuilder.Models.ProjectList.ProjectDetails
+﻿@using Microsoft.AspNetCore.Http
+@model VstsDemoBuilder.Models.ProjectList.ProjectDetails
 @{
     ViewBag.Title = "Azure DevOps Demo Generator - Template Builder";
 }
@@ -140,9 +141,9 @@
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
                    aria-expanded="false">
                     <img src="@Model.profileImage" alt="user">
-                    @if (Session["User"] != null)
+                    @if (!string.IsNullOrEmpty(Context.Session.GetString("User")))
                     {
-                        <span class="VSTS-username ml-1" style="font-size:16px">@Session["User"].ToString()</span>
+                        <span class="VSTS-username ml-1" style="font-size:16px">@Context.Session.GetString("User")</span>
                     }
                     <span class="sr-only">(current)</span>
                 </a>
