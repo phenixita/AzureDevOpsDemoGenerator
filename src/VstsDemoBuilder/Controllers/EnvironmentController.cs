@@ -547,6 +547,10 @@ namespace VstsDemoBuilder.Controllers
                     {
                         model.accessToken = Session["PAT"].ToString();
                     }
+                    else if (!string.IsNullOrEmpty(model.accessToken) && Session["PAT"] == null)
+                    {
+                        Session["PAT"] = model.accessToken;
+                    }
                     Session["AccountName"] = model.accountName;
                     if (Session["GitHubToken"] != null && Session["GitHubToken"].ToString() != "" && model.GitHubFork)
                     {
@@ -664,11 +668,7 @@ namespace VstsDemoBuilder.Controllers
             try
             {
                 bool isTemplateBelongToPrivateFolder = projectService.WhereDoseTemplateBelongTo(selectedTemplate);
-                string effectiveToken = Session["PAT"]?.ToString();
-                if (string.IsNullOrEmpty(effectiveToken))
-                {
-                    effectiveToken = token;
-                }
+                string effectiveToken = Session["PAT"]?.ToString() ?? token ?? string.Empty;
 
                 if (!string.IsNullOrEmpty(selectedTemplate) && !string.IsNullOrEmpty(account) && !string.IsNullOrEmpty(effectiveToken))
                 {
@@ -911,5 +911,3 @@ namespace VstsDemoBuilder.Controllers
     }
 
 }
-
-
