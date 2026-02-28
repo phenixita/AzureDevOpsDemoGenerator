@@ -10,7 +10,7 @@ Findings and actions:
 1. **OAuth state validation weakness (CSRF risk)**  
    - Issue: GitHub OAuth flow generated a static/shared `state` value and did not validate callback `state`.
    - OWASP mapping: A01 Broken Access Control / OAuth CSRF class of issues.
-   - Action taken: `state` is now generated per request, stored in session, and validated in callback before token exchange.
+   - Action taken: `state` is now cryptographically random per request, stored in session, validated in callback, and cleared after validation before token exchange.
 
 2. **Legacy/insecure TLS protocol configuration**  
    - Issue: GitHub REST calls explicitly enabled `Ssl3`, `Tls`, and `Tls11`.
