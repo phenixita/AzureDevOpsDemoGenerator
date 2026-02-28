@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VstsDemoBuilder.Infrastructure;
@@ -23,7 +24,7 @@ namespace VstsDemoBuilder.Controllers
             string ClientSecret = System.Configuration.ConfigurationManager.AppSettings["GitHubClientSecret"];
             string RedirectUrl = System.Configuration.ConfigurationManager.AppSettings["GitHubRedirectUrl"];
             string Scope = System.Configuration.ConfigurationManager.AppSettings["GitHubScope"];
-            string state = Guid.NewGuid().ToString("N");
+            string state = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
             Session[GitHubOAuthStateSessionKey] = state;
             string url = string.Format("https://github.com/login/oauth/authorize?client_id={0}&scope={1}&redirect_uri={2}&state={3}", ClientID, Scope, RedirectUrl, state);
             return Redirect(url);
@@ -39,13 +40,15 @@ namespace VstsDemoBuilder.Controllers
             string expectedState = Session[GitHubOAuthStateSessionKey]?.ToString();
             if (string.IsNullOrEmpty(requestState) || string.IsNullOrEmpty(expectedState) || !string.Equals(requestState, expectedState, StringComparison.Ordinal))
             {
+                ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t GitHub OAuth state validation failed.");
                 return RedirectToAction("Issue");
             }
+            Session[GitHubOAuthStateSessionKey] = null;
 
             if (!string.IsNullOrEmpty(code))
             {
 
-                string reqUrl = FormatRequestUrl(code, requestState);
+                string reqUrl = FormatRequestUrl(code);
                 // Getting access token, if access token is null, will return to Index page [relogin takes place]
                 GitHubAccessDetails _accessDetails = GetAccessToken(reqUrl);
                 if (_accessDetails.access_token != null)
@@ -62,13 +65,13 @@ namespace VstsDemoBuilder.Controllers
             return RedirectToAction("index", "home");
         }
 
-        public string FormatRequestUrl(string code, string state)
+        public string FormatRequestUrl(string code)
         {
             string ClientID = System.Configuration.ConfigurationManager.AppSettings["GitHubClientId"];
             string ClientSecret = System.Configuration.ConfigurationManager.AppSettings["GitHubClientSecret"];
             string RedirectUrl = System.Configuration.ConfigurationManager.AppSettings["GitHubRedirectUrl"];
             string Scope = System.Configuration.ConfigurationManager.AppSettings["GitHubScope"];
-            string requestUrl = string.Format("?client_id={0}&client_secret={1}&code={2}&redirect_uri={3}&state={4}", ClientID, ClientSecret, code, RedirectUrl, state);
+            string requestUrl = string.Format("?client_id={0}&client_secret={1}&code={2}&redirect_uri={3}", ClientID, ClientSecret, code, RedirectUrl);
             return requestUrl;
         }
 
