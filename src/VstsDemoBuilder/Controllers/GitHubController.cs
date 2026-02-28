@@ -14,7 +14,7 @@ namespace VstsDemoBuilder.Controllers
     {
 
         private GitHubAccessDetails accessDetails = new GitHubAccessDetails();
-        public static string state = Guid.NewGuid().ToString().Split('-')[0];
+        private const string GitHubOAuthStateSessionKey = "GitHubOAuthState";
         [AllowAnonymous]
         public ActionResult GitOauth()
         {
@@ -23,6 +23,8 @@ namespace VstsDemoBuilder.Controllers
             string ClientSecret = System.Configuration.ConfigurationManager.AppSettings["GitHubClientSecret"];
             string RedirectUrl = System.Configuration.ConfigurationManager.AppSettings["GitHubRedirectUrl"];
             string Scope = System.Configuration.ConfigurationManager.AppSettings["GitHubScope"];
+            string state = Guid.NewGuid().ToString("N");
+            Session[GitHubOAuthStateSessionKey] = state;
             string url = string.Format("https://github.com/login/oauth/authorize?client_id={0}&scope={1}&redirect_uri={2}&state={3}", ClientID, Scope, RedirectUrl, state);
             return Redirect(url);
         }
@@ -32,12 +34,18 @@ namespace VstsDemoBuilder.Controllers
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             // Here we get the Code in the Query String, using that we can get access token
-            var request = Request;
             string code = Request.Query["code"];
+            string requestState = Request.Query["state"];
+            string expectedState = Session[GitHubOAuthStateSessionKey]?.ToString();
+            if (string.IsNullOrEmpty(requestState) || string.IsNullOrEmpty(expectedState) || !string.Equals(requestState, expectedState, StringComparison.Ordinal))
+            {
+                return RedirectToAction("Issue");
+            }
+
             if (!string.IsNullOrEmpty(code))
             {
 
-                string reqUrl = FormatRequestUrl(code);
+                string reqUrl = FormatRequestUrl(code, requestState);
                 // Getting access token, if access token is null, will return to Index page [relogin takes place]
                 GitHubAccessDetails _accessDetails = GetAccessToken(reqUrl);
                 if (_accessDetails.access_token != null)
@@ -54,7 +62,7 @@ namespace VstsDemoBuilder.Controllers
             return RedirectToAction("index", "home");
         }
 
-        public string FormatRequestUrl(string code)
+        public string FormatRequestUrl(string code, string state)
         {
             string ClientID = System.Configuration.ConfigurationManager.AppSettings["GitHubClientId"];
             string ClientSecret = System.Configuration.ConfigurationManager.AppSettings["GitHubClientSecret"];
@@ -96,4 +104,3 @@ namespace VstsDemoBuilder.Controllers
         }
     }
 }
-
