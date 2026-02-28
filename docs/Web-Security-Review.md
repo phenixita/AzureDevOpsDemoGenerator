@@ -17,5 +17,10 @@ Findings and actions:
    - OWASP mapping: A02 Cryptographic Failures.
    - Action taken: protocol setting has been restricted to `Tls12`.
 
+3. **Access token exposed in HTML hidden input**  
+   - Issue: access token was rendered into the page as `id="hiddenAccessToken"` and read by client JavaScript.
+   - OWASP mapping: A02 Cryptographic Failures / sensitive data exposure.
+   - Action taken: removed hidden input token rendering and updated server endpoints to use session token fallback instead of requiring token from client-side DOM.
+
 Notes:
 - Full broader hardening (security headers, dependency updates, and additional authz checks) should be tracked separately to keep this change set minimal.

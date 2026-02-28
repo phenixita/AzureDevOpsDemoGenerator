@@ -521,7 +521,6 @@ $('#btnSubmit').click(function () {
     var projectName = $.trim($("#txtProjectName").val());
     var template = templateFolder;
     var accountName = $('#ddlAcccountName option:selected').val();
-    var token = $('#hiddenAccessToken').val();
     var email = $('#emailID').val();
     var regex = /^[A-Za-z0-9 -_]*[A-Za-z0-9][A-Za-z0-9 -_]*$/;
     if (accountName === "" || accountName === "Select Organization") {
@@ -617,7 +616,7 @@ $('#btnSubmit').click(function () {
 
     var websiteUrl = window.location.href;
     var projData = {
-        "ProjectName": projectName, "SelectedTemplate": selectedTemplate, "id": uniqueId, "Parameters": Parameters, "selectedUsers": SelectedUsers, "UserMethod": userMethod, "SonarQubeDNS": ServerDNS, "isExtensionNeeded": isExtensionNeeded, "isAgreeTerms": isAgreedTerms, "websiteUrl": websiteUrl, "accountName": accountName, "accessToken": token, "email": email, "GitHubFork": forkGitHub, "PrivateTemplateName": privateTemplateName, "PrivateTemplatePath": privateTemplatePath
+        "ProjectName": projectName, "SelectedTemplate": selectedTemplate, "id": uniqueId, "Parameters": Parameters, "selectedUsers": SelectedUsers, "UserMethod": userMethod, "SonarQubeDNS": ServerDNS, "isExtensionNeeded": isExtensionNeeded, "isAgreeTerms": isAgreedTerms, "websiteUrl": websiteUrl, "accountName": accountName, "email": email, "GitHubFork": forkGitHub, "PrivateTemplateName": privateTemplateName, "PrivateTemplatePath": privateTemplatePath
     };
     $.post("StartEnvironmentSetupProcess", projData, function (data) {
         if (data !== "True") {
@@ -867,14 +866,13 @@ function DisplayErrors() {
 function checkForInstalledExtensions(selectedTemplate, callBack) {
     var accountNam = $('#ddlAcccountName option:selected').val();
     var privatePath = $('#PrivateTemplatePath').val();
-    var Oauthtoken = $('#hiddenAccessToken').val();
     if (accountNam !== "" && selectedTemplate !== "") {
         $("#btnSubmit").prop("disabled", true).removeClass('btn-primary');
 
         $.ajax({
             url: "../Environment/CheckForInstalledExtensions",
             type: "GET",
-            data: { selectedTemplate: selectedTemplate, token: Oauthtoken, Account: accountNam, PrivatePath: privatePath },
+            data: { selectedTemplate: selectedTemplate, Account: accountNam, PrivatePath: privatePath },
             success: function (InstalledExtensions) {
                 if (typeof (InstalledExtensions) === "object") {
                     if (InstalledExtensions.message.indexOf("All required") === 0) {
@@ -909,7 +907,6 @@ function checkForInstalledExtensions(selectedTemplate, callBack) {
 
 function checkForExtensions(callBack) {
     var accountNam = $('#ddlAcccountName option:selected').val();
-    var Oauthtoken = $('#hiddenAccessToken').val();
     var privatePath = $('#PrivateTemplatePath').val();
     var selectedTemplate = templateFolder;
     if ($('#PrivateTemplateName').val() !== "") {
@@ -926,7 +923,7 @@ function checkForExtensions(callBack) {
         $.ajax({
             url: "../Environment/CheckForInstalledExtensions",
             type: "GET",
-            data: { selectedTemplate: selectedTemplate, token: Oauthtoken, Account: accountNam, PrivatePath: privatePath },
+            data: { selectedTemplate: selectedTemplate, Account: accountNam, PrivatePath: privatePath },
             success: function (InstalledExtensions) {
                 if (typeof (InstalledExtensions) === "object") {
                     if (InstalledExtensions.message.indexOf("All required") === 0) {

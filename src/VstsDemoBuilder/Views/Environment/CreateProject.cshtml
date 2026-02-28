@@ -45,10 +45,6 @@
 </head>
 <body class="pb-3">
     <input type="hidden" id="hidnUID" />
-    @if (!string.IsNullOrEmpty(Model.accessToken))
-    {
-        <input type="hidden" value="@Model.accessToken" id="hiddenAccessToken" />
-    }
     @if (!string.IsNullOrEmpty(Model.selectedTemplateDescription))
     {
         <input type="hidden" value="@Model.selectedTemplateDescription" id="selectedTemplateDescription" />

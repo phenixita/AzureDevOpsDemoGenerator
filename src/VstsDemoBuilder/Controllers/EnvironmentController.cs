@@ -543,7 +543,10 @@ namespace VstsDemoBuilder.Controllers
             {
                 if (Session["visited"] != null)
                 {
-                    Session["PAT"] = model.accessToken;
+                    if (Session["PAT"] != null)
+                    {
+                        model.accessToken = Session["PAT"].ToString();
+                    }
                     Session["AccountName"] = model.accountName;
                     if (Session["GitHubToken"] != null && Session["GitHubToken"].ToString() != "" && model.GitHubFork)
                     {
@@ -661,13 +664,19 @@ namespace VstsDemoBuilder.Controllers
             try
             {
                 bool isTemplateBelongToPrivateFolder = projectService.WhereDoseTemplateBelongTo(selectedTemplate);
-                if (!string.IsNullOrEmpty(selectedTemplate) && !string.IsNullOrEmpty(account) && !string.IsNullOrEmpty(token))
+                string effectiveToken = Session["PAT"]?.ToString();
+                if (string.IsNullOrEmpty(effectiveToken))
+                {
+                    effectiveToken = token;
+                }
+
+                if (!string.IsNullOrEmpty(selectedTemplate) && !string.IsNullOrEmpty(account) && !string.IsNullOrEmpty(effectiveToken))
                 {
                     string accountName = string.Empty;
                     string pat = string.Empty;
 
                     accountName = account;
-                    pat = token;
+                    pat = effectiveToken;
                     string templatesFolder = string.Empty;
                     string extensionJsonFile = string.Empty;
                     if (isTemplateBelongToPrivateFolder)
@@ -902,6 +911,5 @@ namespace VstsDemoBuilder.Controllers
     }
 
 }
-
 
 
