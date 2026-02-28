@@ -1,4 +1,4 @@
-﻿namespace VstsDemoBuilder.Models
+namespace VstsDemoBuilder.Models
 {
     public class LoginModel
     {

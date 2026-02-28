@@ -1,4 +1,5 @@
-﻿@model VstsDemoBuilder.Models.Project
+﻿@using Microsoft.AspNetCore.Http
+@model VstsDemoBuilder.Models.Project
 @{
     ViewBag.Title = "Azure DevOps Demo Generator";
 }
@@ -12,42 +13,22 @@
     <link href="~/assets/templategrouping/templategroup.custom.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.8/css/all.css" integrity="sha384-3AB7yXWz4OeoZcPbieVW64vVXEwADiYyAEhwilzWsLw+9FgqpyjjStpPnpBO8o8S" crossorigin="anonymous">
 
-    <script type="text/javascript">
-        var appInsights = window.appInsights || function (config) {
-            function i(config) { t[config] = function () { var i = arguments; t.queue.push(function () { t[config].apply(t, i) }) } } var t = { config: config }, u = document, e = window, o = "script", s = "AuthenticatedUserContext", h = "start", c = "stop", l = "Track", a = l + "Event", v = l + "Page", y = u.createElement(o), r, f; y.src = config.url || "https://az416426.vo.msecnd.net/scripts/a/ai.0.js"; u.getElementsByTagName(o)[0].parentNode.appendChild(y); try { t.cookie = u.cookie } catch (p) { } for (t.queue = [], t.version = "1.0", r = ["Event", "Exception", "Metric", "PageView", "Trace", "Dependency"]; r.length;) i("track" + r.pop()); return i("set" + s), i("clear" + s), i(h + a), i(c + a), i(h + v), i(c + v), i("flush"), config.disableExceptionTracking || (r = "onerror", i("_" + r), f = e[r], e[r] = function (config, i, u, e, o) { var s = f && f(config, i, u, e, o); return s !== !0 && t["_" + r](config, i, u, e, o), s }), t
-        }({
-            instrumentationKey: "__AIKEY__"
-        });
-
-        window.appInsights = appInsights;
-        appInsights.trackPageView();
-    </script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=__GAKEY__"></script>
+    @await Html.PartialAsync("_TelemetryScripts")
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-
-
-        gtag('config', '__GAKEY__');
-        gtag('event', 'Azure DevOps Demo Generator - Main', {
-            'event_category': 'Azure DevOps Demo Generator',
-            'event_label': 'Azure DevOps Demo Generator - Main',
-            'event_action': 'page_view',
-            'send_to': '__GAKEY__'
-        });
+        if (window.__gaKey) {
+            gtag('event', 'Azure DevOps Demo Generator - Main', {
+                'event_category': 'Azure DevOps Demo Generator',
+                'event_label': 'Azure DevOps Demo Generator - Main',
+                'event_action': 'page_view',
+                'send_to': window.__gaKey
+            });
+        }
     </script>
     <title>Create Project</title>
 
 </head>
 <body class="pb-3">
     <input type="hidden" id="hidnUID" />
-    @if (!string.IsNullOrEmpty(Model.accessToken))
-    {
-        <input type="hidden" value="@Model.accessToken" id="hiddenAccessToken" />
-    }
     @if (!string.IsNullOrEmpty(Model.selectedTemplateDescription))
     {
         <input type="hidden" value="@Model.selectedTemplateDescription" id="selectedTemplateDescription" />
@@ -128,10 +109,10 @@
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
                    aria-expanded="false">
-                    <img src="@Model.profileImage" alt="user">
-                    @if (Session["User"] != null)
+                    <img src="@(Model.profileImage ?? "")" alt="user">
+                    @if (!string.IsNullOrEmpty(Context.Session.GetString("User")))
                     {
-                        <span class="VSTS-username ml-1" style="font-size:16px">@Session["User"].ToString()</span>
+                        <span class="VSTS-username ml-1" style="font-size:16px">@Context.Session.GetString("User")</span>
                     }
                     <span class="sr-only">(current)</span>
                 </a>
@@ -172,13 +153,9 @@
                         <p class="mb-0">
                             To provide feedback, you can email us
                             <a class="text-primary" href="https://github.com/microsoft/AzureDevOpsDemoGenerator/issues/new" target="_blank">here </a>.
-                        <p>Like our tool? We would appreciate if you share feedback on social</p>
+                        <p>Like our tool? We would appreciate your feedback!</p>
 
                         <p>
-                            <script>function fbs_click() { u = "https://azuredevopsdemogenerator.azurewebsites.net/"; t = +Azure + DevOps + Demo + Generator & window.open('http://www.facebook.com/sharer.php?u=' + encodeURIComponent(u) + '&t=' + encodeURIComponent(t), 'sharer', 'toolbar=0,status=0,width=626,height=436'); return false; }</script>
-                            <a href="http://www.facebook.com/sharer.php?u=https://azuredevopsdemogenerator.azurewebsites.net/&t=Azure+Devops+Demo+Generator" target="_blank"><img src="~/Images/facebook.png" style="width:20px;" /></a>&nbsp;&nbsp;
-                            <a href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://azuredevopsdemogenerator.azurewebsites.net/&t=Azure+Devops+Demo+Generator" target="_blank"><img src="~/Images/linkedin.png" style="width:20px;" /></a>&nbsp;&nbsp;
-                            <a href="https://twitter.com/intent/tweet?url=https://azuredevopsdemogenerator.azurewebsites.net/&amp;text=Azure+DevOps+Demo+Generator&amp;hashtags=azuredevopsdemogenerator" target="_blank"><img src="~/Images/twitter.png" style="width:20px;" /></a>&nbsp;&nbsp;
                         </p>
                     </div>
                 </div>
@@ -199,7 +176,7 @@
                             </div>
                         </div>
                         <div class="template-invoke mb-3 mt-1 col-lg-3">
-                            @if (Session["PrivateTemplateOriginalName"] == null)
+                            @if (string.IsNullOrEmpty(Context.Session.GetString("PrivateTemplateOriginalName")))
                             {
                                 <button type="button" class="btn btn-primary" id="templateselection" style="padding-left:5px; padding-right:5px; width: 100%">
                                     Choose template
@@ -320,7 +297,7 @@
                     <div class="card-header bg-primary ">About this Template</div>
                     <div class="card-body" style="background-color:white; color:black">
                         <div class="template-header" style="width:100%; float:left;">
-                            <img class="templateImage" style="display: inline-block; float: left;" id="templatePreviewImage" src="">
+                            <img class="templateImage" style="display: inline-block; float: left;" id="templatePreviewImage">
                             <strong style="margin-left: 7px;text-align: left;float: right;display: inline-block;width: 83%;" id="templatePreviewName"></strong>
                         </div>
                         <p class="card-text" id="descContainer">

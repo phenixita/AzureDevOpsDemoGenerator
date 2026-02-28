@@ -151,3 +151,7 @@ UpgradeLog.htm
 /src/AzureDevOpsDemoBuilder/log
 /src/AzureDevOpsDemoBuilder/Appsettings.Development.json
 /src/AzureDevOpsDemoBuilder/appsettings.json
+/.nuget/
+
+# Local development secrets
+**/appsettings.Development.json

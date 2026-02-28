@@ -1,14 +1,17 @@
-﻿using Microsoft.VisualStudio.Services.ExtensionManagement.WebApi;
+using Microsoft.VisualStudio.Services.ExtensionManagement.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Web;
-using System.Web.Hosting;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Threading.Tasks;
 using VstsDemoBuilder.Extensions;
+using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.Models;
 using VstsDemoBuilder.ServiceInterfaces;
 using VstsDemoBuilder.Services;
@@ -18,7 +21,7 @@ using VstsRestAPI.WorkItemAndTracking;
 
 namespace VstsDemoBuilder.Controllers
 {
-    public class EnvironmentController : Controller
+    public class EnvironmentController : CompatController
     {
         private delegate string[] ProcessEnvironment(Project model);
         private IProjectService projectService;
@@ -37,7 +40,7 @@ namespace VstsDemoBuilder.Controllers
         [SessonTimeout]
         public ContentResult GetCurrentProgress(string id)
         {
-            this.ControllerContext.HttpContext.Response.AddHeader("cache-control", "no-cache");
+            Response.Headers["cache-control"] = "no-cache";
             var currentProgress = GetStatusMessage(id).ToString();
             return Content(currentProgress);
         }
@@ -136,7 +139,7 @@ namespace VstsDemoBuilder.Controllers
                     templates.Groups = _templates.Groups;
                 }
             }
-            return Json(templates, JsonRequestBehavior.AllowGet);
+            return Json(templates);
         }
 
         /// <summary>
@@ -306,42 +309,73 @@ namespace VstsDemoBuilder.Controllers
         {
             try
             {
-                AccessDetails _accessDetails = ProjectService.AccessDetails;
-                string isCode = Request.QueryString["code"];
-                if (isCode == null)
-                {
-                    return Redirect("../Account/Verify");
-                }
-                if (Session["visited"] != null)
-                {
-                    if (Session["templateName"] != null && Session["templateName"].ToString() != "")
-                    {
-                        model.TemplateName = Session["templateName"].ToString();
-                    }
-                    string code = Request.QueryString["code"];
-
-                    string redirectUrl = System.Configuration.ConfigurationManager.AppSettings["RedirectUri"];
-                    string clientId = System.Configuration.ConfigurationManager.AppSettings["ClientSecret"];
-                    string accessRequestBody = accountService.GenerateRequestPostData(clientId, code, redirectUrl);
-                    _accessDetails = accountService.GetAccessToken(accessRequestBody);
-                    if (!string.IsNullOrEmpty(_accessDetails.access_token))
-                    {
-                        // add your access token here for local debugging                 
-                        model.accessToken = _accessDetails.access_token;
-                        Session["PAT"] = _accessDetails.access_token;
-                    }
-                    return RedirectToAction("createproject", "Environment");
-                }
-                else
+                model = model ?? new Project();
+                if (Session["visited"] == null)
                 {
                     Session.Clear();
-                    return Redirect("../Account/Verify");
+                    return RedirectToAction("Verify", "Account", new { message = "Your sign-in session expired. Please sign in again." });
                 }
+
+                string oauthError = Request.Query["error"];
+                string oauthErrorDescription = Request.Query["error_description"];
+                if (!string.IsNullOrWhiteSpace(oauthError))
+                {
+                    ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t OAuth callback error: " + oauthError + "\t" + oauthErrorDescription + "\n");
+                    string authErrorMessage = "Authentication failed. Please sign in again.";
+                    if (!string.IsNullOrWhiteSpace(oauthErrorDescription) &&
+                        (oauthErrorDescription.IndexOf("Microsoft account", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         oauthErrorDescription.IndexOf("AADSTS50020", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        authErrorMessage = "Azure DevOps requires a Microsoft Entra work or school account. Please sign in with that account and try again.";
+                    }
+
+                    return RedirectToAction("Verify", "Account", new { message = authErrorMessage });
+                }
+
+                string code = Request.Query["code"];
+                if (string.IsNullOrWhiteSpace(code))
+                {
+                    return RedirectToAction("Verify", "Account", new { message = "Authentication code was not returned. Please sign in again." });
+                }
+
+                if (Session["templateName"] != null && Session["templateName"].ToString() != "")
+                {
+                    model.TemplateName = Session["templateName"].ToString();
+                }
+
+                string redirectUrl = System.Configuration.ConfigurationManager.AppSettings["RedirectUri"];
+                string clientSecret = System.Configuration.ConfigurationManager.AppSettings["ClientSecret"];
+                if (string.IsNullOrWhiteSpace(redirectUrl) || string.IsNullOrWhiteSpace(clientSecret))
+                {
+                    ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t OAuth configuration missing RedirectUri or ClientSecret.\n");
+                    return RedirectToAction("Verify", "Account", new { message = "Authentication is not configured correctly. Please contact support." });
+                }
+
+                string accessRequestBody = accountService.GenerateRequestPostData(clientSecret, code, redirectUrl);
+                AccessDetails accessDetails = accountService.GetAccessToken(accessRequestBody);
+                if (!string.IsNullOrEmpty(accessDetails.access_token))
+                {
+                    // add your access token here for local debugging
+                    model.accessToken = accessDetails.access_token;
+                    Session["PAT"] = accessDetails.access_token;
+                    return RedirectToAction("createproject", "Environment");
+                }
+
+                ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t OAuth token exchange failed: " + (accessDetails.error_description ?? accessDetails.error ?? "Unknown error") + "\n");
+                string tokenFailureMessage = "Could not complete authentication with Azure DevOps. Please sign in again.";
+                if (!string.IsNullOrWhiteSpace(accessDetails.error_description) &&
+                    (accessDetails.error_description.IndexOf("Microsoft account", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     accessDetails.error_description.IndexOf("AADSTS50020", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    tokenFailureMessage = "Azure DevOps requires a Microsoft Entra work or school account. Please sign in with that account and try again.";
+                }
+
+                return RedirectToAction("Verify", "Account", new { message = tokenFailureMessage });
             }
             catch (Exception ex)
             {
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                return View();
+                return RedirectToAction("Verify", "Account", new { message = "An unexpected authentication error occurred. Please sign in again." });
             }
         }
 
@@ -354,8 +388,8 @@ namespace VstsDemoBuilder.Controllers
             string templateName = string.Empty;
             strResult[0] = templateName;
             strResult[1] = string.Empty;
-            // Checking no of files injected in Request object  
-            if (Request.Files.Count > 0)
+            // Checking no of files injected in Request object
+            if (Request.Form.Files.Count > 0)
             {
                 try
                 {
@@ -363,40 +397,24 @@ namespace VstsDemoBuilder.Controllers
                     {
                         Directory.CreateDirectory(Server.MapPath("~") + @"\ExtractedZipFile");
                     }
-                    //  Get all files from Request object  
-                    HttpFileCollectionBase files = Request.Files;
+                    // Get all files from Request object
+                    var files = Request.Form.Files;
                     for (int i = 0; i < files.Count; i++)
                     {
+                        var file = files[i];
+                        var fileName = Path.GetFileName(file.FileName);
+                        templateName = fileName.ToLower().Replace(".zip", "").Trim() + "-" + Guid.NewGuid().ToString().Substring(0, 6) + ".zip";
 
-                        HttpPostedFileBase file = files[i];
-                        string fileName;
-
-                        // Checking for Internet Explorer  
-                        if (Request.Browser.Browser.ToUpper() == "IE" || Request.Browser.Browser.ToUpper() == "INTERNETEXPLORER")
+                        var outputFilePath = Path.Combine(Server.MapPath("~/ExtractedZipFile/"), templateName);
+                        if (System.IO.File.Exists(outputFilePath))
                         {
-                            string[] testFiles = file.FileName.Split(new char[] { '\\' });
-                            fileName = testFiles[testFiles.Length - 1];
-                            templateName = fileName.ToLower().Replace(".zip", "").Trim() + "-" + Guid.NewGuid().ToString().Substring(0, 6) + ".zip";
-
-                            if (System.IO.File.Exists(Path.Combine(Server.MapPath("~/ExtractedZipFile/"), templateName)))
-                            {
-                                System.IO.File.Delete(Path.Combine(Server.MapPath("~/ExtractedZipFile/"), templateName));
-                            }
-                        }
-                        else
-                        {
-                            fileName = file.FileName;
-                            templateName = fileName.ToLower().Replace(".zip", "").Trim() + "-" + Guid.NewGuid().ToString().Substring(0, 6) + ".zip";
-
-                            if (System.IO.File.Exists(Path.Combine(Server.MapPath("~/ExtractedZipFile/"), templateName)))
-                            {
-                                System.IO.File.Delete(Path.Combine(Server.MapPath("~/ExtractedZipFile/"), templateName));
-                            }
+                            System.IO.File.Delete(outputFilePath);
                         }
 
-                        // Get the complete folder path and store the file inside it.  
-                        fileName = Path.Combine(Server.MapPath("~/ExtractedZipFile/"), templateName);
-                        file.SaveAs(fileName);
+                        using (var fileStream = System.IO.File.Create(outputFilePath))
+                        {
+                            file.CopyTo(fileStream);
+                        }
                     }
                     strResult[0] = templateName;
                     // Returns message that successfully uploaded  
@@ -434,7 +452,7 @@ namespace VstsDemoBuilder.Controllers
                     Directory.CreateDirectory(Server.MapPath("~") + @"\PrivateTemplates");
                 }
                 //Deleting uploaded zip files present from last one hour
-                string extractedZipFile = HostingEnvironment.MapPath("~") + @"ExtractedZipFile\";
+                string extractedZipFile = AppPath.MapPath("~") + @"ExtractedZipFile\";
                 if (Directory.Exists(extractedZipFile))
                 {
                     string[] subdirs = Directory.GetFiles(extractedZipFile)
@@ -471,7 +489,7 @@ namespace VstsDemoBuilder.Controllers
                 Directory.Delete(extractPath, true);
                 return Json(ex.Message);
             }
-            return Json(privateTemplate, JsonRequestBehavior.AllowGet);
+            return Json(privateTemplate);
         }
 
         /// <summary>
@@ -509,7 +527,7 @@ namespace VstsDemoBuilder.Controllers
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
                 return null;
             }
-            return Json(mod, JsonRequestBehavior.AllowGet);
+            return Json(mod);
         }
 
         /// <summary>
@@ -520,13 +538,20 @@ namespace VstsDemoBuilder.Controllers
         [HttpPost]
         [AllowAnonymous]
         [SessonTimeout]
-        public bool StartEnvironmentSetupProcess(Project model)
+        public JsonResult StartEnvironmentSetupProcess(Project model)
         {
             try
             {
                 if (Session["visited"] != null)
                 {
-                    Session["PAT"] = model.accessToken;
+                    if (Session["PAT"] != null)
+                    {
+                        model.accessToken = Session["PAT"].ToString();
+                    }
+                    else if (!string.IsNullOrEmpty(model.accessToken) && Session["PAT"] == null)
+                    {
+                        Session["PAT"] = model.accessToken;
+                    }
                     Session["AccountName"] = model.accountName;
                     if (Session["GitHubToken"] != null && Session["GitHubToken"].ToString() != "" && model.GitHubFork)
                     {
@@ -547,19 +572,29 @@ namespace VstsDemoBuilder.Controllers
                     {
                         model.IsPrivatePath = true;
                     }
-                    ProcessEnvironment processTask = new ProcessEnvironment(projectService.CreateProjectEnvironment);
-                    processTask.BeginInvoke(model, new AsyncCallback(EndEnvironmentSetupProcess), processTask);
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            string[] strResult = projectService.CreateProjectEnvironment(model);
+                            EndEnvironmentSetupProcessResult(strResult);
+                        }
+                        catch (Exception bgEx)
+                        {
+                            ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t Background: " + bgEx.Message + "\n" + bgEx.StackTrace + "\n");
+                        }
+                    });
                 }
                 else
                 {
-                    return false;
+                    return Json(false);
                 }
             }
             catch (Exception ex)
             {
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
             }
-            return true;
+            return Json(true);
         }
 
         /// <summary>
@@ -568,13 +603,18 @@ namespace VstsDemoBuilder.Controllers
         /// <param name="result"></param>
         public void EndEnvironmentSetupProcess(IAsyncResult result)
         {
+            ProcessEnvironment processTask = (ProcessEnvironment)result.AsyncState;
+            string[] strResult = processTask.EndInvoke(result);
+            EndEnvironmentSetupProcessResult(strResult);
+        }
+
+        private void EndEnvironmentSetupProcessResult(string[] strResult)
+        {
             string templateUsed = string.Empty;
             string ID = string.Empty;
             string accName = string.Empty;
             try
             {
-                ProcessEnvironment processTask = (ProcessEnvironment)result.AsyncState;
-                string[] strResult = processTask.EndInvoke(result);
                 if (strResult != null && strResult.Length > 0)
                 {
                     ID = strResult[0];
@@ -587,7 +627,7 @@ namespace VstsDemoBuilder.Controllers
                         if (errorMessages != "")
                         {
                             //also, log message to file system
-                            string logPath = Server.MapPath("~") + @"\Log";
+                            string logPath = AppPath.MapPath("~") + @"\Log";
                             string accountName = strResult[1];
                             string fileName = string.Format("{0}_{1}.txt", templateUsed, DateTime.Now.ToString("ddMMMyyyy_HHmmss"));
 
@@ -644,13 +684,15 @@ namespace VstsDemoBuilder.Controllers
             try
             {
                 bool isTemplateBelongToPrivateFolder = projectService.WhereDoseTemplateBelongTo(selectedTemplate);
-                if (!string.IsNullOrEmpty(selectedTemplate) && !string.IsNullOrEmpty(account) && !string.IsNullOrEmpty(token))
+                string effectiveToken = Session["PAT"]?.ToString() ?? token ?? string.Empty;
+
+                if (!string.IsNullOrEmpty(selectedTemplate) && !string.IsNullOrEmpty(account) && !string.IsNullOrEmpty(effectiveToken))
                 {
                     string accountName = string.Empty;
                     string pat = string.Empty;
 
                     accountName = account;
-                    pat = token;
+                    pat = effectiveToken;
                     string templatesFolder = string.Empty;
                     string extensionJsonFile = string.Empty;
                     if (isTemplateBelongToPrivateFolder)
@@ -671,7 +713,7 @@ namespace VstsDemoBuilder.Controllers
 
                     if (!(System.IO.File.Exists(extensionJsonFile)))
                     {
-                        return Json(new { message = "Template not found", status = "false" }, JsonRequestBehavior.AllowGet);
+                        return Json(new { message = "Template not found", status = "false" });
                     }
 
                     RequiredExtensions.Extension template = new RequiredExtensions.Extension();
@@ -682,7 +724,7 @@ namespace VstsDemoBuilder.Controllers
                     }
                     if (template == null || template.Extensions == null || template.Extensions.Count == 0)
                     {
-                        return Json(new { message = "no extensions required", status = "false" }, JsonRequestBehavior.AllowGet);
+                        return Json(new { message = "no extensions required", status = "false" });
                     }
                     template.Extensions.RemoveAll(x => x.extensionName.ToLower() == "analytics");
                     template.Extensions = template.Extensions.OrderBy(y => y.extensionName).ToList();
@@ -774,7 +816,7 @@ namespace VstsDemoBuilder.Controllers
                                 requiredThirdPartyExt = requiredThirdPartyExt + "<br/><div id='ThirdPartyAgreeTerms'><label style = 'font-weight: 400; text-align: justify; padding-left: 5px;'><input type = 'checkbox' class='terms' id = 'ThirdPartyagreeTermsConditions' placeholder='thirdparty' /> &nbsp; The extension(s) are offered to you for your use by a third party, not Microsoft.  The extension(s) is licensed separately according to its corresponding License Terms.  By continuing and installing those extensions, you also agree to those License Terms.</label></div>";
                             }
                             finalExtensionString = requiresExtensionNames + requiredMicrosoftExt + requiredThirdPartyExt;
-                            return Json(new { message = finalExtensionString, status = "false" }, JsonRequestBehavior.AllowGet);
+                            return Json(new { message = finalExtensionString, status = "false" });
                         }
                         else
                         {
@@ -788,24 +830,24 @@ namespace VstsDemoBuilder.Controllers
                                     string lincense = "";
                                     requiresExtensionNames = requiresExtensionNames + link + lincense + "<br/>";
                                 }
-                                return Json(new { message = requiresExtensionNames, status = "true" }, JsonRequestBehavior.AllowGet);
+                                return Json(new { message = requiresExtensionNames, status = "true" });
                             }
                         }
 
                     }
-                    else { requiresExtensionNames = "no extensions required"; return Json(new { message = "no extensions required", status = "false" }, JsonRequestBehavior.AllowGet); }
-                    return Json(new { message = requiresExtensionNames, status = "false" }, JsonRequestBehavior.AllowGet);
+                    else { requiresExtensionNames = "no extensions required"; return Json(new { message = "no extensions required", status = "false" }); }
+                    return Json(new { message = requiresExtensionNames, status = "false" });
                 }
                 else
                 {
-                    return Json(new { message = "Error", status = "false" }, JsonRequestBehavior.AllowGet);
+                    return Json(new { message = "Error", status = "false" });
                 }
 
             }
             catch (Exception ex)
             {
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                return Json(new { message = "Error", status = "false" }, JsonRequestBehavior.AllowGet);
+                return Json(new { message = "Error", status = "false" });
             }
         }
 
@@ -850,7 +892,7 @@ namespace VstsDemoBuilder.Controllers
                         privateTemplate.responseMessage = templateService.checkSelectedTemplateIsPrivate(privateTemplate.privateTemplatePath);
                         if (privateTemplate.responseMessage != "SUCCESS")
                         {
-                            var templatepath = HostingEnvironment.MapPath("~") + @"\PrivateTemplates\" + templateName.ToLower().Replace(".zip", "").Trim();
+                            var templatepath = AppPath.MapPath("~") + @"\PrivateTemplates\" + templateName.ToLower().Replace(".zip", "").Trim();
                             if (Directory.Exists(templatepath))
                                 Directory.Delete(templatepath, true);
                         }
@@ -864,13 +906,13 @@ namespace VstsDemoBuilder.Controllers
                 catch (Exception ex)
                 {
                     ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                    return Json(new { message = "Error", status = "false" }, JsonRequestBehavior.AllowGet);
+                    return Json(new { message = "Error", status = "false" });
                 }
-                return Json(privateTemplate, JsonRequestBehavior.AllowGet);
+                return Json(privateTemplate);
             }
             else
             {
-                return Json("Session Expired", JsonRequestBehavior.AllowGet);
+                return Json("Session Expired");
             }
 
         }
@@ -885,4 +927,3 @@ namespace VstsDemoBuilder.Controllers
     }
 
 }
-

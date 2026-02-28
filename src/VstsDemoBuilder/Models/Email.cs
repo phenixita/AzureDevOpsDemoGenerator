@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Mail;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using System.Web;
 
 namespace VstsDemoBuilder.Models
 {
@@ -42,8 +41,6 @@ namespace VstsDemoBuilder.Models
             };
             try
 			{
-				ServicePointManager.ServerCertificateValidationCallback = delegate (object s, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-				{ return true; };
 				smtp.Send(newmsg);
 			}
 			catch (Exception)

@@ -178,7 +178,7 @@ $(document).ready(function () {
             'event_category': 'Analyze Button',
             'event_label': 'Analyze Button',
             'event_action': 'clicked',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
         var SourceAcc = $("#ddlAcccountName").val();
         var project = $("#projectSelect").val();
@@ -283,7 +283,7 @@ $(document).ready(function () {
             'event_category': 'Generate Artifact',
             'event_label': 'Generate Artifact',
             'event_action': 'clicked',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
         $('.accorDetails').removeClass('show');
         var SourceAcc = $("#ddlAcccountName").val();
@@ -322,7 +322,7 @@ $(document).ready(function () {
             contentType: 'application/json',
             data: JSON.stringify(projects),
             success: function (res) {
-                if (res === "True") {
+                if (res === true) {
                     getStatus();
                 }
             },
@@ -339,7 +339,7 @@ $(document).ready(function () {
             'event_category': 'fileDownload',
             'event_label': 'fileDownload',
             'event_action': 'clicked',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
     });
 

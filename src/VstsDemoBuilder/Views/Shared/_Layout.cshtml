@@ -12,32 +12,16 @@
     <meta property="og:description" content="Azure DevOps Demo Generator helps you create projects on your Azure DevOps organization with pre-populated  sample content that includes source code, work items, iterations, service endpoints, build and release definitions based on a template you choose.">
     <meta property="og:url" content="https://azuredevopsdemogenerator.azurewebsites.net">
 
-    <script type="text/javascript">
-        var appInsights = window.appInsights || function (config) {
-            function i(config) { t[config] = function () { var i = arguments; t.queue.push(function () { t[config].apply(t, i) }) } } var t = { config: config }, u = document, e = window, o = "script", s = "AuthenticatedUserContext", h = "start", c = "stop", l = "Track", a = l + "Event", v = l + "Page", y = u.createElement(o), r, f; y.src = config.url || "https://az416426.vo.msecnd.net/scripts/a/ai.0.js"; u.getElementsByTagName(o)[0].parentNode.appendChild(y); try { t.cookie = u.cookie } catch (p) { } for (t.queue = [], t.version = "1.0", r = ["Event", "Exception", "Metric", "PageView", "Trace", "Dependency"]; r.length;) i("track" + r.pop()); return i("set" + s), i("clear" + s), i(h + a), i(c + a), i(h + v), i(c + v), i("flush"), config.disableExceptionTracking || (r = "onerror", i("_" + r), f = e[r], e[r] = function (config, i, u, e, o) { var s = f && f(config, i, u, e, o); return s !== !0 && t["_" + r](config, i, u, e, o), s }), t
-        }({
-            instrumentationKey: "__AIKEY__"
-        });
-
-        window.appInsights = appInsights;
-        appInsights.trackPageView();
-    </script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=__GAKEY__"></script>
+    @await Html.PartialAsync("_TelemetryScripts")
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-
-
-        gtag('config', '__GAKEY__', 'auto');
-        gtag('event', 'Azure DevOps Demo Generator - Shared', {
-            'event_category': 'Azure DevOps Demo Generator',
-            'event_label': 'Azure DevOps Demo Generator - Shared',
-            'event_action': 'page_view',
-            'send_to': '__GAKEY__'
-        });
+        if (window.__gaKey) {
+            gtag('event', 'Azure DevOps Demo Generator - Shared', {
+                'event_category': 'Azure DevOps Demo Generator',
+                'event_label': 'Azure DevOps Demo Generator - Shared',
+                'event_action': 'page_view',
+                'send_to': window.__gaKey
+            });
+        }
     </script>
 
 </head>
@@ -45,7 +29,7 @@
     <!--nav bar-->
     @RenderBody()
 
-    @Scripts.Render("~/bundles/jquery")
+    <script src="~/Scripts/jquery-1.12.4.min.js"></script>
     
 
     @RenderSection("scripts", required: false)
