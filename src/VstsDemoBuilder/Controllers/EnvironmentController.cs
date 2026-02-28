@@ -308,42 +308,73 @@ namespace VstsDemoBuilder.Controllers
         {
             try
             {
-                AccessDetails _accessDetails = ProjectService.AccessDetails;
-                string isCode = Request.Query["code"];
-                if (isCode == null)
-                {
-                    return Redirect("../Account/Verify");
-                }
-                if (Session["visited"] != null)
-                {
-                    if (Session["templateName"] != null && Session["templateName"].ToString() != "")
-                    {
-                        model.TemplateName = Session["templateName"].ToString();
-                    }
-                    string code = Request.Query["code"];
-
-                    string redirectUrl = System.Configuration.ConfigurationManager.AppSettings["RedirectUri"];
-                    string clientId = System.Configuration.ConfigurationManager.AppSettings["ClientSecret"];
-                    string accessRequestBody = accountService.GenerateRequestPostData(clientId, code, redirectUrl);
-                    _accessDetails = accountService.GetAccessToken(accessRequestBody);
-                    if (!string.IsNullOrEmpty(_accessDetails.access_token))
-                    {
-                        // add your access token here for local debugging                 
-                        model.accessToken = _accessDetails.access_token;
-                        Session["PAT"] = _accessDetails.access_token;
-                    }
-                    return RedirectToAction("createproject", "Environment");
-                }
-                else
+                model = model ?? new Project();
+                if (Session["visited"] == null)
                 {
                     Session.Clear();
-                    return Redirect("../Account/Verify");
+                    return RedirectToAction("Verify", "Account", new { message = "Your sign-in session expired. Please sign in again." });
                 }
+
+                string oauthError = Request.Query["error"];
+                string oauthErrorDescription = Request.Query["error_description"];
+                if (!string.IsNullOrWhiteSpace(oauthError))
+                {
+                    ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t OAuth callback error: " + oauthError + "\t" + oauthErrorDescription + "\n");
+                    string authErrorMessage = "Authentication failed. Please sign in again.";
+                    if (!string.IsNullOrWhiteSpace(oauthErrorDescription) &&
+                        (oauthErrorDescription.IndexOf("Microsoft account", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         oauthErrorDescription.IndexOf("AADSTS50020", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        authErrorMessage = "Azure DevOps requires a Microsoft Entra work or school account. Please sign in with that account and try again.";
+                    }
+
+                    return RedirectToAction("Verify", "Account", new { message = authErrorMessage });
+                }
+
+                string code = Request.Query["code"];
+                if (string.IsNullOrWhiteSpace(code))
+                {
+                    return RedirectToAction("Verify", "Account", new { message = "Authentication code was not returned. Please sign in again." });
+                }
+
+                if (Session["templateName"] != null && Session["templateName"].ToString() != "")
+                {
+                    model.TemplateName = Session["templateName"].ToString();
+                }
+
+                string redirectUrl = System.Configuration.ConfigurationManager.AppSettings["RedirectUri"];
+                string clientSecret = System.Configuration.ConfigurationManager.AppSettings["ClientSecret"];
+                if (string.IsNullOrWhiteSpace(redirectUrl) || string.IsNullOrWhiteSpace(clientSecret))
+                {
+                    ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t OAuth configuration missing RedirectUri or ClientSecret.\n");
+                    return RedirectToAction("Verify", "Account", new { message = "Authentication is not configured correctly. Please contact support." });
+                }
+
+                string accessRequestBody = accountService.GenerateRequestPostData(clientSecret, code, redirectUrl);
+                AccessDetails accessDetails = accountService.GetAccessToken(accessRequestBody);
+                if (!string.IsNullOrEmpty(accessDetails.access_token))
+                {
+                    // add your access token here for local debugging
+                    model.accessToken = accessDetails.access_token;
+                    Session["PAT"] = accessDetails.access_token;
+                    return RedirectToAction("createproject", "Environment");
+                }
+
+                ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t OAuth token exchange failed: " + (accessDetails.error_description ?? accessDetails.error ?? "Unknown error") + "\n");
+                string tokenFailureMessage = "Could not complete authentication with Azure DevOps. Please sign in again.";
+                if (!string.IsNullOrWhiteSpace(accessDetails.error_description) &&
+                    (accessDetails.error_description.IndexOf("Microsoft account", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     accessDetails.error_description.IndexOf("AADSTS50020", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    tokenFailureMessage = "Azure DevOps requires a Microsoft Entra work or school account. Please sign in with that account and try again.";
+                }
+
+                return RedirectToAction("Verify", "Account", new { message = tokenFailureMessage });
             }
             catch (Exception ex)
             {
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                return View();
+                return RedirectToAction("Verify", "Account", new { message = "An unexpected authentication error occurred. Please sign in again." });
             }
         }
 

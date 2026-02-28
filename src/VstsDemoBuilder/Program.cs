@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using VstsDemoBuilder.Infrastructure;
@@ -35,12 +37,17 @@ var app = builder.Build();
 AppPath.ContentRootPath = app.Environment.ContentRootPath;
 AppPath.WebRootPath = app.Environment.WebRootPath;
 
-app.UseHttpsRedirection();
+// App Service terminates TLS at the load balancer — trust forwarded headers
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // Serve legacy ASP.NET MVC static folders from the content root
+var contentRoot = app.Environment.ContentRootPath;
 foreach (var folder in new[] { "Content", "Scripts", "assets", "Images", "fonts" })
 {
-    var folderPath = Path.Combine(app.Environment.ContentRootPath, folder);
+    var folderPath = Path.Combine(contentRoot, folder);
     if (Directory.Exists(folderPath))
     {
         app.UseStaticFiles(new StaticFileOptions

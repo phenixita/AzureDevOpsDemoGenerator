@@ -54,23 +54,23 @@ namespace VstsDemoBuilder.Services
                 request.Content = new StringContent(body, Encoding.UTF8, "application/x-www-form-urlencoded");
 
                 var response = client.SendAsync(request).Result;
-                if (response.IsSuccessStatusCode)
+                string result = response.Content.ReadAsStringAsync().Result;
+                AccessDetails details = Newtonsoft.Json.JsonConvert.DeserializeObject<AccessDetails>(result) ?? new AccessDetails();
+                if (!response.IsSuccessStatusCode)
                 {
-                    string result = response.Content.ReadAsStringAsync().Result;
-                    AccessDetails details = Newtonsoft.Json.JsonConvert.DeserializeObject<AccessDetails>(result);
-                    return details;
+                    ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t GetAccessToken error: " + result + "\n");
                 }
-                else
-                {
-                    string error = response.Content.ReadAsStringAsync().Result;
-                    ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t GetAccessToken error: " + error + "\n");
-                }
+                return details;
             }
             catch (Exception ex)
             {
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
+                return new AccessDetails
+                {
+                    error = "token_exchange_exception",
+                    error_description = ex.Message
+                };
             }
-            return new AccessDetails();
         }
 
         /// <summary>

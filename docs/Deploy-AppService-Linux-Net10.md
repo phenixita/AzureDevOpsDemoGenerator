@@ -55,6 +55,7 @@ L'autenticazione OAuth verso Azure DevOps utilizza **Microsoft Entra ID** (ex Az
 
 1. Nel portale Azure → **Microsoft Entra ID → App registrations → New registration**.
 2. Impostare come **Redirect URI** il valore `https://<webapp-name>.azurewebsites.net/Environment/Create`.
+   - Per Azure DevOps Entra OAuth usare account supportati Microsoft Entra (single/multi-tenant); gli account Microsoft personali (MSA) non sono supportati in modo nativo per questa integrazione.
 3. In **API permissions → Add a permission → APIs my organization uses**, cercare `Azure DevOps` (AppId `499b84ac-1321-427f-aa17-267ca6975798`) e aggiungere il permesso `user_impersonation`.
 4. In **Certificates & secrets**, creare un client secret e annotarlo.
 5. Impostare i secrets nel repository GitHub:

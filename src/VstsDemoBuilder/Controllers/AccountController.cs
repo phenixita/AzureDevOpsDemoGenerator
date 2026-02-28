@@ -42,9 +42,14 @@ namespace VstsDemoBuilder.Controllers
         /// <returns></returns>
         [HttpGet]
         [AllowAnonymous]
-        public ActionResult Verify(LoginModel model, string id)
+        public ActionResult Verify(LoginModel model, string id, string message = "")
         {
+            model = model ?? new LoginModel();
             Session.Clear();
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                ViewBag.resMessage = message;
+            }
             // check to enable extractor
             if (string.IsNullOrEmpty(model.EnableExtractor) || model.EnableExtractor.ToLower() == "false")
             {
