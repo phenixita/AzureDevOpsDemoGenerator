@@ -779,72 +779,70 @@ function getStatus() {
                 window.setTimeout("getStatus()", 500);
             }
             else {
-                if (messageList.length !== 3) {
-                    var ID = uniqueId + "_Errors";
-                    var url2 = 'GetCurrentProgress/' + ID;
-                    $.get(url2, function (response) {
-                        if (response === "100" || response === "") {
-                            $.ajax({
-                                url: "../Account/GetAccountName/",
-                                type: "GET",
-                                async: false,
-                                success: function (data) {
-                                    var accountName = $('#ddlAcccountName option:selected').val();
-                                    var projectNameForLink = $("#txtProjectName").val();
-                                    var link = "https://dev.azure.com/" + accountName + "/" + projectNameForLink;
-                                    var proceedOrg = "<a href='" + link + "' target='_blank'><button type = 'button' class='btn btn-primary btn-sm' id = 'proceedOrg' style = 'margin: 5px;'> Navigate to project</button></a>";
-                                    $('<b style="display: block;">Congratulations! Your project is successfully provisioned.</b>' + proceedOrg).appendTo("#accountLink");
-                                    $('#dvProgress').removeClass("d-block").addClass("d-none");
-                                    $('#textMuted').removeClass("d-block").addClass("d-none");
-                                    currentPercentage = 0;
+                var ID = uniqueId + "_Errors";
+                var url2 = 'GetCurrentProgress/' + ID;
+                $.get(url2, function (response) {
+                    if (response === "100" || response === "") {
+                        $.ajax({
+                            url: "../Account/GetAccountName/",
+                            type: "GET",
+                            async: false,
+                            success: function (data) {
+                                var accountName = $('#ddlAcccountName option:selected').val();
+                                var projectNameForLink = $("#txtProjectName").val();
+                                var link = "https://dev.azure.com/" + accountName + "/" + projectNameForLink;
+                                var proceedOrg = "<a href='" + link + "' target='_blank'><button type = 'button' class='btn btn-primary btn-sm' id = 'proceedOrg' style = 'margin: 5px;'> Navigate to project</button></a>";
+                                $('<b style="display: block;">Congratulations! Your project is successfully provisioned.</b>' + proceedOrg).appendTo("#accountLink");
+                                $('#dvProgress').removeClass("d-block").addClass("d-none");
+                                $('#textMuted').removeClass("d-block").addClass("d-none");
+                                currentPercentage = 0;
 
-                                    $('#progressBar').width(currentPercentage++ + '%');
-                                    $("#finalLink").removeClass("d-none").addClass("d-block");
-                                    $("#btnSubmit").prop("disabled", false).addClass('btn-primary');
-                                    $("#txtProjectName").val("");
+                                $('#progressBar').width(currentPercentage++ + '%');
+                                $("#finalLink").removeClass("d-none").addClass("d-block");
+                                $("#btnSubmit").prop("disabled", false).addClass('btn-primary');
+                                $("#txtProjectName").val("");
 
-                                    $('#ddlAcccountName').prop('selectedIndex', 0);
-                                    $("#templateselection").prop("disabled", false).addClass('btn-primary');
+                                $('#ddlAcccountName').prop('selectedIndex', 0);
+                                $("#templateselection").prop("disabled", false).addClass('btn-primary');
 
-                                    $('#ddlGroups').removeAttr("disabled");
-                                    $("#ddlAcccountName").removeAttr("disabled");
-                                    $("#txtProjectName").removeAttr("disabled");
-                                    $('input[id="gitHubCheckbox"]').prop('disabled', false);
+                                $('#ddlGroups').removeAttr("disabled");
+                                $("#ddlAcccountName").removeAttr("disabled");
+                                $("#txtProjectName").removeAttr("disabled");
+                                $('input[id="gitHubCheckbox"]').prop('disabled', false);
 
-                                }
-                            });
-                        }
-                        else {
-                            ErrorData = response;
-                            var accountName = $('#ddlAcccountName option:selected').val();
-                            $("#projCreateMsg").hide();
-
-                            $('#dvProgress').removeClass("d-block").addClass("d-none");
-                            $('#textMuted').removeClass("d-block").addClass("d-none");
-                            currentPercentage = 0;
-                            $('#status-messages').empty().hide();
-                            $('#progressBar').width(currentPercentage++ + '%');
-                            $("#finalLink").addClass("d-none").removeClass("d-block");
-                            $("#btnSubmit").prop("disabled", false).addClass('btn-primary');
-                            $("#txtProjectName").val("");
-
-                            $('#ddlAcccountName').prop('selectedIndex', 0);
-                            $("#templateselection").prop("disabled", false).addClass('btn-primary');
-                            $('#ddlGroups').removeAttr("disabled");
-                            $("#ddlAcccountName").removeAttr("disabled");
-                            $("#txtProjectName").removeAttr("disabled");
-                            $('input[id="gitHubCheckbox"]').prop('disabled', false);
-                            if (ErrorData !== '') {
-                                $("#projCreateMsg").hide(); $("#errorDescription").html("");
-                                $('<b style="display: block;">We ran into some issues and we are sorry about that!</b><p> The log below will provide you insights into why the provisioning failed. You can raise and issue with the logs <a id="EmailPopup" href="https://github.com/microsoft/AzureDevOpsDemoGenerator/issues/new" target="_blank"><i>here</i></a> and we will try to help you.</p><p>Click on View Diagnostics button to share logs with us.</p>').appendTo("#errorDescription");
-                                $("#errorMail").empty().append(ErrorData);
-                                $("#errorNotify").show();
-                                $("#errorNotify").removeClass("d-none").addClass("d-block");
                             }
+                        });
+                    }
+                    else {
+                        ErrorData = response;
+                        var accountName = $('#ddlAcccountName option:selected').val();
+                        $("#projCreateMsg").hide();
+
+                        $('#dvProgress').removeClass("d-block").addClass("d-none");
+                        $('#textMuted').removeClass("d-block").addClass("d-none");
+                        currentPercentage = 0;
+                        $('#status-messages').empty().hide();
+                        $('#progressBar').width(currentPercentage++ + '%');
+                        $("#finalLink").addClass("d-none").removeClass("d-block");
+                        $("#btnSubmit").prop("disabled", false).addClass('btn-primary');
+                        $("#txtProjectName").val("");
+
+                        $('#ddlAcccountName').prop('selectedIndex', 0);
+                        $("#templateselection").prop("disabled", false).addClass('btn-primary');
+                        $('#ddlGroups').removeAttr("disabled");
+                        $("#ddlAcccountName").removeAttr("disabled");
+                        $("#txtProjectName").removeAttr("disabled");
+                        $('input[id="gitHubCheckbox"]').prop('disabled', false);
+                        if (ErrorData !== '') {
+                            $("#projCreateMsg").hide(); $("#errorDescription").html("");
+                            $('<b style="display: block;">We ran into some issues and we are sorry about that!</b><p> The log below will provide you insights into why the provisioning failed. You can raise and issue with the logs <a id="EmailPopup" href="https://github.com/microsoft/AzureDevOpsDemoGenerator/issues/new" target="_blank"><i>here</i></a> and we will try to help you.</p><p>Click on View Diagnostics button to share logs with us.</p>').appendTo("#errorDescription");
+                            $("#errorMail").empty().append(ErrorData);
+                            $("#errorNotify").show();
+                            $("#errorNotify").removeClass("d-none").addClass("d-block");
                         }
-                    });
-                    messageList = [];
-                }
+                    }
+                });
+                messageList = [];
             }
         },
         error: function (xhr) {

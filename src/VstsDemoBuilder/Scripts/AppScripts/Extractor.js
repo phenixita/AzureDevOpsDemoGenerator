@@ -377,66 +377,64 @@ function getStatus() {
                 window.setTimeout("getStatus()", 1000);
             }
             else {
-                if (messageList.length !== 3) {
-                    var ID = uniqueId + "_Errors";
-                    var url2 = 'GetCurrentProgress/' + ID;
-                    $.get(url2, function (response) {
-                        console.log(response);
-                        if (response === "100" || response === "") {
+                var ID = uniqueId + "_Errors";
+                var url2 = 'GetCurrentProgress/' + ID;
+                $.get(url2, function (response) {
+                    console.log(response);
+                    if (response === "100" || response === "") {
+                        $('#artifactProgress').removeClass('d-none');
+                        $('#GenerateArtifacts').removeClass('lodergif');
+                        //$('#ExdvProgress').removeClass("d-block").addClass("d-none");
+                        $('#textMuted').removeClass("d-block").addClass("d-none");
+                        currentPercentage = 0;
+                        $('#GenerateArtifacts').addClass('btn-primary').attr('disabled', false);
+                        $('#Analyse').addClass('btn-primary').attr('disabled', false);
+                        $('.genArtifacts').removeClass('show');
+
+                        $('#ExtractorProgressBar').width(currentPercentage++ + '%');
+                        $("#finalLink").removeClass("d-none").addClass("d-block");
+                        $("#btnSubmit").prop("disabled", false);
+                        $("#txtProjectName").val("");
+
+                        $('#ddlAcccountName').prop('selectedIndex', 0);
+                        $("#templateselection").prop("disabled", false);
+
+                        $('#ddlGroups').removeAttr("disabled");
+                        $("#ddlAcccountName").removeAttr("disabled");
+                        $("#txtProjectName").removeAttr("disabled");
+                        $("#ddlAcccountName").prop('disabled', false);
+                        $("#projectSelect").prop('disabled', false);
+                    }
+                    else {
+                        ErrorData = response;
+                        if (ErrorData !== '') {
                             $('#artifactProgress').removeClass('d-none');
-                            $('#GenerateArtifacts').removeClass('lodergif');
-                            //$('#ExdvProgress').removeClass("d-block").addClass("d-none");
-                            $('#textMuted').removeClass("d-block").addClass("d-none");
                             currentPercentage = 0;
                             $('#GenerateArtifacts').addClass('btn-primary').attr('disabled', false);
                             $('#Analyse').addClass('btn-primary').attr('disabled', false);
                             $('.genArtifacts').removeClass('show');
 
-                            $('#ExtractorProgressBar').width(currentPercentage++ + '%');
+                            $("#projCreateMsg").hide();
+                            $('<b style="display: block;">We ran into some issues and we are sorry about that!</b><p> The log below will provide you insights into why the provisioning failed. You can raise an issue with the error logs <a id="EmailPopup" href="https://github.com/microsoft/AzureDevOpsDemoGenerator/issues/new" target="_blank">here</a> and we will try to help you.</p><p>Click on View Diagnostics button to share logs with us.</p>').appendTo("#errorDescription");
+                            $('#GenerateArtifacts').removeClass('lodergif');
+                            //$('#ExdvProgress').removeClass("d-block").addClass("d-none");
+                            $("#errorNotify").removeClass("d-none").addClass("d-block");
                             $("#finalLink").removeClass("d-none").addClass("d-block");
+
+                            $("#errorMail").empty().append(ErrorData);
+                            $("#errorNotify").show();
+
                             $("#btnSubmit").prop("disabled", false);
                             $("#txtProjectName").val("");
-
                             $('#ddlAcccountName').prop('selectedIndex', 0);
-                            $("#templateselection").prop("disabled", false);
-
                             $('#ddlGroups').removeAttr("disabled");
                             $("#ddlAcccountName").removeAttr("disabled");
-                            $("#txtProjectName").removeAttr("disabled");
                             $("#ddlAcccountName").prop('disabled', false);
                             $("#projectSelect").prop('disabled', false);
                         }
-                        else {
-                            ErrorData = response;
-                            if (ErrorData !== '') {
-                                $('#artifactProgress').removeClass('d-none');
-                                currentPercentage = 0;
-                                $('#GenerateArtifacts').addClass('btn-primary').attr('disabled', false);
-                                $('#Analyse').addClass('btn-primary').attr('disabled', false);
-                                $('.genArtifacts').removeClass('show');
-
-                                $("#projCreateMsg").hide();
-                                $('<b style="display: block;">We ran into some issues and we are sorry about that!</b><p> The log below will provide you insights into why the provisioning failed. You can raise an issue with the error logs <a id="EmailPopup" href="https://github.com/microsoft/AzureDevOpsDemoGenerator/issues/new" target="_blank">here</a> and we will try to help you.</p><p>Click on View Diagnostics button to share logs with us.</p>').appendTo("#errorDescription");
-                                $('#GenerateArtifacts').removeClass('lodergif');
-                                //$('#ExdvProgress').removeClass("d-block").addClass("d-none");
-                                $("#errorNotify").removeClass("d-none").addClass("d-block");
-                                $("#finalLink").removeClass("d-none").addClass("d-block");
-
-                                $("#errorMail").empty().append(ErrorData);
-                                $("#errorNotify").show();
-
-                                $("#btnSubmit").prop("disabled", false);
-                                $("#txtProjectName").val("");
-                                $('#ddlAcccountName').prop('selectedIndex', 0);
-                                $('#ddlGroups').removeAttr("disabled");
-                                $("#ddlAcccountName").removeAttr("disabled");
-                                $("#ddlAcccountName").prop('disabled', false);
-                                $("#projectSelect").prop('disabled', false);
-                            }
-                        }
-                    });
-                    messageList = [];
-                }
+                    }
+                });
+                messageList = [];
             }
         },
         error: function (xhr) {
