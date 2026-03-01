@@ -1,19 +1,20 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
-using System.Net;
 using System.Net.Http;
-using System.Web.Mvc;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using VstsDemoBuilder.Infrastructure;
 using VstsDemoBuilder.Models;
-using System.Web;
 using VstsDemoBuilder.Services;
 
 namespace VstsDemoBuilder.Controllers
 {
-    public class GitHubController : Controller
+    public class GitHubController : CompatController
     {
 
         private GitHubAccessDetails accessDetails = new GitHubAccessDetails();
-        public static string state = Guid.NewGuid().ToString().Split('-')[0];
+        private const string GitHubOAuthStateSessionKey = "GitHubOAuthState";
         [AllowAnonymous]
         public ActionResult GitOauth()
         {
@@ -22,17 +23,27 @@ namespace VstsDemoBuilder.Controllers
             string ClientSecret = System.Configuration.ConfigurationManager.AppSettings["GitHubClientSecret"];
             string RedirectUrl = System.Configuration.ConfigurationManager.AppSettings["GitHubRedirectUrl"];
             string Scope = System.Configuration.ConfigurationManager.AppSettings["GitHubScope"];
+            string state = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            Session[GitHubOAuthStateSessionKey] = state;
             string url = string.Format("https://github.com/login/oauth/authorize?client_id={0}&scope={1}&redirect_uri={2}&state={3}", ClientID, Scope, RedirectUrl, state);
             return Redirect(url);
         }
         [AllowAnonymous]
         public ActionResult Redirect()
         {
-            ServicePointManager.Expect100Continue = true;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            // Here we get the Code in the Query String, using that we can get access token
+                // Here we get the Code in the Query String, using that we can get access token
             var request = Request;
-            string code = Request.QueryString["code"];
+            // Here we get the Code in the Query String, using that we can get access token
+            string code = Request.Query["code"];
+            string requestState = Request.Query["state"];
+            string expectedState = Session[GitHubOAuthStateSessionKey]?.ToString();
+            if (string.IsNullOrEmpty(requestState) || string.IsNullOrEmpty(expectedState) || !string.Equals(requestState, expectedState, StringComparison.Ordinal))
+            {
+                ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t GitHub OAuth state validation failed.");
+                return RedirectToAction("Issue");
+            }
+            Session[GitHubOAuthStateSessionKey] = null;
+
             if (!string.IsNullOrEmpty(code))
             {
 
@@ -59,7 +70,7 @@ namespace VstsDemoBuilder.Controllers
             string ClientSecret = System.Configuration.ConfigurationManager.AppSettings["GitHubClientSecret"];
             string RedirectUrl = System.Configuration.ConfigurationManager.AppSettings["GitHubRedirectUrl"];
             string Scope = System.Configuration.ConfigurationManager.AppSettings["GitHubScope"];
-            string requestUrl = string.Format("?client_id={0}&client_secret={1}&code={2}&redirect_uri={3}&state={4}", ClientID, ClientSecret, code, RedirectUrl, state);
+            string requestUrl = string.Format("?client_id={0}&client_secret={1}&code={2}&redirect_uri={3}", ClientID, ClientSecret, code, RedirectUrl);
             return requestUrl;
         }
 

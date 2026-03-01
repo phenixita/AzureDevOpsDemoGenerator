@@ -1,0 +1,152 @@
+name: Build and deploy (.NET 10 Linux)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - "infra/**"
+      - "src/**"
+
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  SOLUTION_PATH: "src/VSTSDemoGeneratorV2.sln"
+  WEB_PROJECT_PATH: "src/VstsDemoBuilder/VstsDemoBuilder.csproj"
+  ARTIFACT_NAME: "webapp-package"
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: preview
+
+      - name: Restore
+        run: dotnet restore $SOLUTION_PATH
+
+      - name: Build
+        run: dotnet build $SOLUTION_PATH --configuration Release --no-restore
+
+      - name: Publish web app
+        run: dotnet publish $WEB_PROJECT_PATH --configuration Release --no-build --output ./publish
+
+      - name: Create deployment package
+        run: |
+          cd publish
+          zip -r ../webapp.zip .
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: webapp.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build extra app settings payload
+        id: appsettings
+        env:
+          LEGACY_CLIENT_ID: ${{ secrets.LEGACY_CLIENT_ID }}
+          LEGACY_CLIENT_SECRET: ${{ secrets.LEGACY_CLIENT_SECRET }}
+          LEGACY_REDIRECT_URI: ${{ secrets.LEGACY_REDIRECT_URI }}
+          LEGACY_APP_SCOPE: ${{ secrets.LEGACY_APP_SCOPE }}
+          LEGACY_TENANT_ID: ${{ secrets.LEGACY_TENANT_ID }}
+          LEGACY_PASSWORD: ${{ secrets.LEGACY_PASSWORD }}
+          LEGACY_GITHUB_CLIENT_ID: ${{ secrets.LEGACY_GITHUB_CLIENT_ID }}
+          LEGACY_GITHUB_CLIENT_SECRET: ${{ secrets.LEGACY_GITHUB_CLIENT_SECRET }}
+          LEGACY_GITHUB_REDIRECT_URL: ${{ secrets.LEGACY_GITHUB_REDIRECT_URL }}
+          LEGACY_GITHUB_SCOPE: ${{ secrets.LEGACY_GITHUB_SCOPE }}
+          LEGACY_PAT_BASE64: ${{ secrets.LEGACY_PAT_BASE64 }}
+          LEGACY_EMAIL_FROM: ${{ secrets.LEGACY_EMAIL_FROM }}
+          LEGACY_EMAIL_USERNAME: ${{ secrets.LEGACY_EMAIL_USERNAME }}
+          LEGACY_EMAIL_PASSWORD: ${{ secrets.LEGACY_EMAIL_PASSWORD }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          mapping = {
+              "LegacyAppSettings__TenantId": os.getenv("LEGACY_TENANT_ID", ""),
+              "LegacyAppSettings__ClientId": os.getenv("LEGACY_CLIENT_ID", ""),
+              "LegacyAppSettings__ClientSecret": os.getenv("LEGACY_CLIENT_SECRET", ""),
+              "LegacyAppSettings__RedirectUri": os.getenv("LEGACY_REDIRECT_URI", ""),
+              "LegacyAppSettings__appScope": os.getenv("LEGACY_APP_SCOPE", ""),
+              "LegacyAppSettings__Password": os.getenv("LEGACY_PASSWORD", ""),
+              "LegacyAppSettings__GitHubClientId": os.getenv("LEGACY_GITHUB_CLIENT_ID", ""),
+              "LegacyAppSettings__GitHubClientSecret": os.getenv("LEGACY_GITHUB_CLIENT_SECRET", ""),
+              "LegacyAppSettings__GitHubRedirectUrl": os.getenv("LEGACY_GITHUB_REDIRECT_URL", ""),
+              "LegacyAppSettings__GitHubScope": os.getenv("LEGACY_GITHUB_SCOPE", ""),
+              "LegacyAppSettings__PATBase64": os.getenv("LEGACY_PAT_BASE64", ""),
+              "LegacyAppSettings__from": os.getenv("LEGACY_EMAIL_FROM", ""),
+              "LegacyAppSettings__username": os.getenv("LEGACY_EMAIL_USERNAME", ""),
+              "LegacyAppSettings__EmailPassword": os.getenv("LEGACY_EMAIL_PASSWORD", "")
+          }
+
+          app_settings = {k: v for k, v in mapping.items() if v}
+          output_file = os.environ["GITHUB_OUTPUT"]
+          with open(output_file, "a", encoding="utf-8") as f:
+              f.write(f"json={json.dumps(app_settings, separators=(',', ':'))}\n")
+          PY
+
+      - name: Deploy Bicep infrastructure
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az group create --name "$AZURE_RESOURCE_GROUP" --location "$AZURE_LOCATION"
+            EXTRA_APP_SETTINGS='${{ steps.appsettings.outputs.json }}'
+            az deployment group create \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --template-file infra/main.bicep \
+              --parameters @infra/parameters/production.parameters.json \
+              --parameters location="$AZURE_LOCATION" \
+                           extraAppSettings="$EXTRA_APP_SETTINGS"
+
+      - name: Download package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: .
+
+      - name: Deploy web app package
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az webapp deploy \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --name "$AZURE_WEBAPP_NAME" \
+              --src-path webapp.zip \
+              --type zip
+            az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME"
+
+      - name: Smoke test
+        run: |
+          sleep 15
+          curl --fail --silent --show-error "https://${AZURE_WEBAPP_NAME}.azurewebsites.net/" > /dev/null

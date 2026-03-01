@@ -135,7 +135,7 @@ namespace VstsRestAPI.DeliveryPlans
                     }
                 }
             }
-            catch(Exception ex)
+            catch(Exception)
             {
 
             }

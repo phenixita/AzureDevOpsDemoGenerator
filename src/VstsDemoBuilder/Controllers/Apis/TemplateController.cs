@@ -1,49 +1,34 @@
-﻿using Common.Logging;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
-using VstsDemoBuilder.Extensions;
-using VstsDemoBuilder.Models;
+using Microsoft.AspNetCore.Mvc;
 using VstsDemoBuilder.ServiceInterfaces;
 using VstsDemoBuilder.Services;
-using static VstsDemoBuilder.Models.TemplateSelection;
 
 namespace VstsDemoBuilder.Controllers.Apis
 {
-    [RoutePrefix("api/templates")]
-    public class TemplateController : ApiController
+    [ApiController]
+    [Route("api/templates")]
+    public class TemplateController : ControllerBase
     {
-    
-        private ITemplateService templateService;
+        private readonly ITemplateService templateService;
 
-        public TemplateController()
+        public TemplateController(ITemplateService templateService)
         {
-            templateService = new TemplateService();
+            this.templateService = templateService;
         }
 
-        [HttpGet]
-        [Route("AllTemplates")]
-        public HttpResponseMessage GetTemplates()
+        [HttpGet("AllTemplates")]
+        public IActionResult GetTemplates()
         {
             ProjectService.TrackFeature("api/templates/Alltemplates");
             var templates = templateService.GetAllTemplates();
-            return Request.CreateResponse(HttpStatusCode.OK, templates);
+            return Ok(templates);
         }
 
-        [HttpGet]
-        [Route("TemplatesByTags")]
-        public HttpResponseMessage templatesbyTags(string Tags)
+        [HttpGet("TemplatesByTags")]
+        public IActionResult TemplatesByTags(string tags)
         {
             ProjectService.TrackFeature("api/templates/TemplateByTags");
-            var templates = templateService.GetTemplatesByTags(Tags);
-            return Request.CreateResponse(HttpStatusCode.OK, templates);
-        }       
-
-
+            var templates = templateService.GetTemplatesByTags(tags);
+            return Ok(templates);
+        }
     }
 }

@@ -9,7 +9,7 @@ $(document).ready(function () {
             'event_category': 'GitHubAuthorize',
             'event_label': 'GitHubAuthorize',
             'event_action': 'clicked',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
     });
     $('input[id="gitHubCheckbox"]').click(function () {

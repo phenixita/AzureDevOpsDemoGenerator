@@ -8,7 +8,7 @@ $(document).ready(function () {
             'event_category': 'Build Your Template',
             'event_label': 'Build Your Template',
             'event_action': 'visited',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
     });
 
@@ -30,7 +30,7 @@ $(document).ready(function () {
         'event_category': 'Create page',
         'event_label': 'Create page',
         'event_action': 'visited',
-        'send_to': '__GAKEY__'
+        'send_to': (window.__gaKey || '')
     });
     $('#switch').click(function () {
         $('#notify').removeClass('d-none');
@@ -80,7 +80,7 @@ $(document).ready(function (event) {
             'event_category': 'Choose Template Button',
             'event_label': 'Choose Template Button',
             'event_action': 'clicked',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
     });
 
@@ -251,7 +251,7 @@ $(document).ready(function (event) {
             'event_category': 'Selected Template',
             'event_label': checkExtensionsForSelectedTemplate,
             'event_action': 'selected',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
         if (accountNameToCheckExtension === "" || accountNameToCheckExtension === "--select organiaztion--") {
             return false;
@@ -521,7 +521,6 @@ $('#btnSubmit').click(function () {
     var projectName = $.trim($("#txtProjectName").val());
     var template = templateFolder;
     var accountName = $('#ddlAcccountName option:selected').val();
-    var token = $('#hiddenAccessToken').val();
     var email = $('#emailID').val();
     var regex = /^[A-Za-z0-9 -_]*[A-Za-z0-9][A-Za-z0-9 -_]*$/;
     if (accountName === "" || accountName === "Select Organization") {
@@ -617,10 +616,10 @@ $('#btnSubmit').click(function () {
 
     var websiteUrl = window.location.href;
     var projData = {
-        "ProjectName": projectName, "SelectedTemplate": selectedTemplate, "id": uniqueId, "Parameters": Parameters, "selectedUsers": SelectedUsers, "UserMethod": userMethod, "SonarQubeDNS": ServerDNS, "isExtensionNeeded": isExtensionNeeded, "isAgreeTerms": isAgreedTerms, "websiteUrl": websiteUrl, "accountName": accountName, "accessToken": token, "email": email, "GitHubFork": forkGitHub, "PrivateTemplateName": privateTemplateName, "PrivateTemplatePath": privateTemplatePath
+        "ProjectName": projectName, "SelectedTemplate": selectedTemplate, "id": uniqueId, "Parameters": Parameters, "selectedUsers": SelectedUsers, "UserMethod": userMethod, "SonarQubeDNS": ServerDNS, "isExtensionNeeded": isExtensionNeeded, "isAgreeTerms": isAgreedTerms, "websiteUrl": websiteUrl, "accountName": accountName, "email": email, "GitHubFork": forkGitHub, "PrivateTemplateName": privateTemplateName, "PrivateTemplatePath": privateTemplatePath
     };
     $.post("StartEnvironmentSetupProcess", projData, function (data) {
-        if (data !== "True") {
+        if (data !== true) {
             //var queryTemplate = '@Request.QueryString["queryTemplate"]';
             //window.location.href = "~/Account/Verify?template=" + queryTemplate;
             //return;
@@ -646,7 +645,7 @@ $('#btnSubmit').click(function () {
             'event_category': 'Selected Template',
             'event_label': selectedTemplate,
             'event_action': 'selected',
-            'send_to': '__GAKEY__'
+            'send_to': (window.__gaKey || '')
         });
         appInsights.trackEvent("User method" + userMethod);
 
@@ -794,11 +793,7 @@ function getStatus() {
                                     var projectNameForLink = $("#txtProjectName").val();
                                     var link = "https://dev.azure.com/" + accountName + "/" + projectNameForLink;
                                     var proceedOrg = "<a href='" + link + "' target='_blank'><button type = 'button' class='btn btn-primary btn-sm' id = 'proceedOrg' style = 'margin: 5px;'> Navigate to project</button></a>";
-                                    var social = "<p style='color: black; font-weight: 500; margin: 0px;'>Like the tool? Share your feedback &nbsp;";
-                                    social += "<script>function fbs_click() { u = 'https://azuredevopsdemogenerator.azurewebsites.net/'; t = +Azure + DevOps + Demo + Generator & window.open('http://www.facebook.com/sharer.php?u=' + encodeURIComponent(u) + '&t=' + encodeURIComponent(t), 'sharer', 'toolbar=0,status=0,width=626,height=436'); return false; }</script>";
-                                    var twitter = "<a href='https://twitter.com/intent/tweet?url=https://azuredevopsdemogenerator.azurewebsites.net/&amp;text=Azure+DevOps+Demo+Generator&amp;hashtags=azuredevopsdemogenerator' target='_blank'><img src='/Images/twitter.png' style='width:20px;'></a>&nbsp;&nbsp;";
-                                    social += twitter;
-                                    $('<b style="display: block;">Congratulations! Your project is successfully provisioned.</b>' + proceedOrg + social).appendTo("#accountLink");
+                                    $('<b style="display: block;">Congratulations! Your project is successfully provisioned.</b>' + proceedOrg).appendTo("#accountLink");
                                     $('#dvProgress').removeClass("d-block").addClass("d-none");
                                     $('#textMuted').removeClass("d-block").addClass("d-none");
                                     currentPercentage = 0;
@@ -867,14 +862,13 @@ function DisplayErrors() {
 function checkForInstalledExtensions(selectedTemplate, callBack) {
     var accountNam = $('#ddlAcccountName option:selected').val();
     var privatePath = $('#PrivateTemplatePath').val();
-    var Oauthtoken = $('#hiddenAccessToken').val();
     if (accountNam !== "" && selectedTemplate !== "") {
         $("#btnSubmit").prop("disabled", true).removeClass('btn-primary');
 
         $.ajax({
             url: "../Environment/CheckForInstalledExtensions",
             type: "GET",
-            data: { selectedTemplate: selectedTemplate, token: Oauthtoken, Account: accountNam, PrivatePath: privatePath },
+            data: { selectedTemplate: selectedTemplate, Account: accountNam, PrivatePath: privatePath },
             success: function (InstalledExtensions) {
                 if (typeof (InstalledExtensions) === "object") {
                     if (InstalledExtensions.message.indexOf("All required") === 0) {
@@ -909,7 +903,6 @@ function checkForInstalledExtensions(selectedTemplate, callBack) {
 
 function checkForExtensions(callBack) {
     var accountNam = $('#ddlAcccountName option:selected').val();
-    var Oauthtoken = $('#hiddenAccessToken').val();
     var privatePath = $('#PrivateTemplatePath').val();
     var selectedTemplate = templateFolder;
     if ($('#PrivateTemplateName').val() !== "") {
@@ -926,7 +919,7 @@ function checkForExtensions(callBack) {
         $.ajax({
             url: "../Environment/CheckForInstalledExtensions",
             type: "GET",
-            data: { selectedTemplate: selectedTemplate, token: Oauthtoken, Account: accountNam, PrivatePath: privatePath },
+            data: { selectedTemplate: selectedTemplate, Account: accountNam, PrivatePath: privatePath },
             success: function (InstalledExtensions) {
                 if (typeof (InstalledExtensions) === "object") {
                     if (InstalledExtensions.message.indexOf("All required") === 0) {

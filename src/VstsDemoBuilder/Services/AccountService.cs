@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Web;
 using VstsDemoBuilder.Models;
 using VstsDemoBuilder.ServiceInterfaces;
 
@@ -15,64 +14,63 @@ namespace VstsDemoBuilder.Services
     public class AccountService :IAccountService
     {
         /// <summary>
-        /// Formatting the request for OAuth
+        /// Build token request body for Entra OAuth 2.0 authorization code exchange
         /// </summary>
-        /// <param name="appSecret"></param>
-        /// <param name="authCode"></param>
-        /// <param name="callbackUrl"></param>
-        /// <returns></returns>
         public string GenerateRequestPostData(string appSecret, string authCode, string callbackUrl)
         {
             try
             {
-                return String.Format("client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion={0}&grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion={1}&redirect_uri={2}",
-                            HttpUtility.UrlEncode(appSecret),
-                            HttpUtility.UrlEncode(authCode),
-                            callbackUrl
-                     );
+                string clientId = System.Configuration.ConfigurationManager.AppSettings["ClientId"];
+                string appScope = System.Configuration.ConfigurationManager.AppSettings["appScope"];
+
+                return string.Format(
+                    "client_id={0}&client_secret={1}&code={2}&redirect_uri={3}&grant_type=authorization_code&scope={4}",
+                    WebUtility.UrlEncode(clientId),
+                    WebUtility.UrlEncode(appSecret),
+                    WebUtility.UrlEncode(authCode),
+                    WebUtility.UrlEncode(callbackUrl),
+                    WebUtility.UrlEncode(appScope)
+                );
             }
             catch (Exception ex)
             {
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                //ViewBag.ErrorMessage = ex.Message;
             }
             return string.Empty;
         }
 
         /// <summary>
-        /// Generate Access Token
+        /// Exchange authorization code for access token via Entra token endpoint
         /// </summary>
-        /// <param name="body"></param>
-        /// <returns></returns>
         public AccessDetails GetAccessToken(string body)
         {
             try
             {
-                string baseAddress = System.Configuration.ConfigurationManager.AppSettings["BaseAddress"];
-                var client = new HttpClient
-                {
-                    BaseAddress = new Uri(baseAddress)
-                };
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                var request = new HttpRequestMessage(HttpMethod.Post, "/oauth2/token");
+                string tenantId = System.Configuration.ConfigurationManager.AppSettings["TenantId"] ?? "common";
+                string tokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
 
-                var requestContent = body;
-                request.Content = new StringContent(requestContent, Encoding.UTF8, "application/x-www-form-urlencoded");
+                var client = new HttpClient();
+                var request = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
+                request.Content = new StringContent(body, Encoding.UTF8, "application/x-www-form-urlencoded");
 
                 var response = client.SendAsync(request).Result;
-                if (response.IsSuccessStatusCode)
+                string result = response.Content.ReadAsStringAsync().Result;
+                AccessDetails details = Newtonsoft.Json.JsonConvert.DeserializeObject<AccessDetails>(result) ?? new AccessDetails();
+                if (!response.IsSuccessStatusCode)
                 {
-                    string result = response.Content.ReadAsStringAsync().Result;
-                    AccessDetails details = Newtonsoft.Json.JsonConvert.DeserializeObject<AccessDetails>(result);
-                    return details;
+                    ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t GetAccessToken error: " + result + "\n");
                 }
+                return details;
             }
             catch (Exception ex)
             {
                 ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                //ViewBag.ErrorMessage = ex.Message;
+                return new AccessDetails
+                {
+                    error = "token_exchange_exception",
+                    error_description = ex.Message
+                };
             }
-            return new AccessDetails();
         }
 
         /// <summary>
@@ -116,24 +114,28 @@ namespace VstsDemoBuilder.Services
 
 
         /// <summary>
-        /// Refresh access token
+        /// Refresh access token via Entra token endpoint
         /// </summary>
-        /// <param name="refreshToken"></param>
-        /// <returns></returns>
         public AccessDetails Refresh_AccessToken(string refreshToken)
         {
             using (var client = new HttpClient())
             {
+                string tenantId = System.Configuration.ConfigurationManager.AppSettings["TenantId"] ?? "common";
                 string redirectUri = System.Configuration.ConfigurationManager.AppSettings["RedirectUri"];
-                string cientSecret = System.Configuration.ConfigurationManager.AppSettings["ClientSecret"];
-                string baseAddress = System.Configuration.ConfigurationManager.AppSettings["BaseAddress"];
+                string clientId = System.Configuration.ConfigurationManager.AppSettings["ClientId"];
+                string clientSecret = System.Configuration.ConfigurationManager.AppSettings["ClientSecret"];
+                string appScope = System.Configuration.ConfigurationManager.AppSettings["appScope"];
 
-                var request = new HttpRequestMessage(HttpMethod.Post, baseAddress + "/oauth2/token");
+                string tokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
+                var request = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
                 var requestContent = string.Format(
-                    "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion={0}&grant_type=refresh_token&assertion={1}&redirect_uri={2}",
-                    HttpUtility.UrlEncode(cientSecret),
-                    HttpUtility.UrlEncode(refreshToken), redirectUri
-                    );
+                    "client_id={0}&client_secret={1}&grant_type=refresh_token&refresh_token={2}&redirect_uri={3}&scope={4}",
+                    WebUtility.UrlEncode(clientId),
+                    WebUtility.UrlEncode(clientSecret),
+                    WebUtility.UrlEncode(refreshToken),
+                    WebUtility.UrlEncode(redirectUri),
+                    WebUtility.UrlEncode(appScope)
+                );
 
                 request.Content = new StringContent(requestContent, Encoding.UTF8, "application/x-www-form-urlencoded");
                 try
