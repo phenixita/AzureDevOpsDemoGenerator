@@ -86,13 +86,14 @@ namespace VstsDemoBuilder.Controllers
         [SessonTimeout]
         public ContentResult GetTemplate(string TemplateName)
         {
-            string templatesPath = Server.MapPath("~") + @"\Templates\";
+            string templatesPath = AppPath.MapPath("~/Templates");
             string template = string.Empty;
 
-            if (System.IO.File.Exists(templatesPath + Path.GetFileName(TemplateName) + @"\ProjectTemplate.json"))
+            string projectTemplatePath = Path.Combine(templatesPath, Path.GetFileName(TemplateName), "ProjectTemplate.json");
+            if (System.IO.File.Exists(projectTemplatePath))
             {
                 Project objP = new Project();
-                template = objP.ReadJsonFile(templatesPath + Path.GetFileName(TemplateName) + @"\ProjectTemplate.json");
+                template = objP.ReadJsonFile(projectTemplatePath);
             }
             return Content(template);
         }
@@ -108,11 +109,11 @@ namespace VstsDemoBuilder.Controllers
         {
             string groupDetails = "";
             TemplateSelection.Templates templates = new TemplateSelection.Templates();
-            string templatesPath = ""; templatesPath = Server.MapPath("~") + @"\Templates\";
+            string templatesPath = AppPath.MapPath("~/Templates");
             string email = Session["Email"].ToString();
-            if (System.IO.File.Exists(templatesPath + "TemplateSetting.json"))
+            if (System.IO.File.Exists(Path.Combine(templatesPath, "TemplateSetting.json")))
             {
-                groupDetails = System.IO.File.ReadAllText(templatesPath + @"\TemplateSetting.json");
+                groupDetails = System.IO.File.ReadAllText(Path.Combine(templatesPath, "TemplateSetting.json"));
                 templates = JsonConvert.DeserializeObject<TemplateSelection.Templates>(groupDetails);
                 foreach (var Group in templates.GroupwiseTemplates)
                 {
@@ -217,7 +218,7 @@ namespace VstsDemoBuilder.Controllers
                             model.Templates = new List<string>();
                             model.accountUsersForDdl = new List<SelectListItem>();
                             TemplateSelection.Templates templates = new TemplateSelection.Templates();
-                            string[] dirTemplates = Directory.GetDirectories(Server.MapPath("~") + @"\Templates");
+                            string[] dirTemplates = Directory.GetDirectories(AppPath.MapPath("~/Templates"));
 
                             //Taking all the template folder and adding to list
                             foreach (string template in dirTemplates)
@@ -225,9 +226,9 @@ namespace VstsDemoBuilder.Controllers
                                 model.Templates.Add(Path.GetFileName(template));
                             }
                             // Reading Template setting file to check for private templates
-                            if (System.IO.File.Exists(Server.MapPath("~") + @"\Templates\TemplateSetting.json"))
+                            if (System.IO.File.Exists(AppPath.MapPath("~/Templates/TemplateSetting.json")))
                             {
-                                string templateSetting = model.ReadJsonFile(Server.MapPath("~") + @"\Templates\TemplateSetting.json");
+                                string templateSetting = model.ReadJsonFile(AppPath.MapPath("~/Templates/TemplateSetting.json"));
                                 templates = JsonConvert.DeserializeObject<TemplateSelection.Templates>(templateSetting);
                             }
                             //[for direct URLs] if the incoming template name is not null, checking for Template name in Template setting file. 
@@ -393,9 +394,10 @@ namespace VstsDemoBuilder.Controllers
             {
                 try
                 {
-                    if (!Directory.Exists(Server.MapPath("~") + @"\ExtractedZipFile"))
+                    string extractedZipDir = AppPath.MapPath("~/ExtractedZipFile");
+                    if (!Directory.Exists(extractedZipDir))
                     {
-                        Directory.CreateDirectory(Server.MapPath("~") + @"\ExtractedZipFile");
+                        Directory.CreateDirectory(extractedZipDir);
                     }
                     // Get all files from Request object
                     var files = Request.Form.Files;
@@ -443,16 +445,18 @@ namespace VstsDemoBuilder.Controllers
             string extractPath = string.Empty;
             try
             {
-                if (!System.IO.Directory.Exists(Server.MapPath("~") + @"\Logs"))
+                string logsDir = AppPath.MapPath("~/Logs");
+                if (!System.IO.Directory.Exists(logsDir))
                 {
-                    Directory.CreateDirectory(Server.MapPath("~") + @"\Logs");
+                    Directory.CreateDirectory(logsDir);
                 }
-                if (!Directory.Exists(Server.MapPath("~") + @"\PrivateTemplates"))
+                string privateTemplatesDir = AppPath.MapPath("~/PrivateTemplates");
+                if (!Directory.Exists(privateTemplatesDir))
                 {
-                    Directory.CreateDirectory(Server.MapPath("~") + @"\PrivateTemplates");
+                    Directory.CreateDirectory(privateTemplatesDir);
                 }
                 //Deleting uploaded zip files present from last one hour
-                string extractedZipFile = AppPath.MapPath("~") + @"ExtractedZipFile\";
+                string extractedZipFile = AppPath.MapPath("~/ExtractedZipFile");
                 if (Directory.Exists(extractedZipFile))
                 {
                     string[] subdirs = Directory.GetFiles(extractedZipFile)
@@ -627,7 +631,7 @@ namespace VstsDemoBuilder.Controllers
                         if (errorMessages != "")
                         {
                             //also, log message to file system
-                            string logPath = AppPath.MapPath("~") + @"\Log";
+                            string logPath = AppPath.MapPath("~/Log");
                             string accountName = strResult[1];
                             string fileName = string.Format("{0}_{1}.txt", templateUsed, DateTime.Now.ToString("ddMMMyyyy_HHmmss"));
 
@@ -698,17 +702,17 @@ namespace VstsDemoBuilder.Controllers
                     if (isTemplateBelongToPrivateFolder)
                     {
                         templatesFolder = PrivatePath;//Session["PrivateTemplateURL"].ToString();
-                        extensionJsonFile = string.Format("{0}\\{1}", templatesFolder, "Extensions.json");
+                        extensionJsonFile = Path.Combine(templatesFolder, "Extensions.json");
                     }
                     else if (string.IsNullOrEmpty(PrivatePath))
                     {
-                        templatesFolder = Server.MapPath("~") + @"\Templates\";
-                        extensionJsonFile = string.Format(templatesFolder + @"\{0}\Extensions.json", selectedTemplate);
+                        templatesFolder = AppPath.MapPath("~/Templates");
+                        extensionJsonFile = Path.Combine(templatesFolder, selectedTemplate, "Extensions.json");
                     }
                     else
                     {
                         templatesFolder = PrivatePath;
-                        extensionJsonFile = string.Format(templatesFolder + @"\Extensions.json");
+                        extensionJsonFile = Path.Combine(templatesFolder, "Extensions.json");
                     }
 
                     if (!(System.IO.File.Exists(extensionJsonFile)))
@@ -892,7 +896,7 @@ namespace VstsDemoBuilder.Controllers
                         privateTemplate.responseMessage = templateService.checkSelectedTemplateIsPrivate(privateTemplate.privateTemplatePath);
                         if (privateTemplate.responseMessage != "SUCCESS")
                         {
-                            var templatepath = AppPath.MapPath("~") + @"\PrivateTemplates\" + templateName.ToLower().Replace(".zip", "").Trim();
+                            var templatepath = Path.Combine(AppPath.MapPath("~/PrivateTemplates"), templateName.ToLower().Replace(".zip", "").Trim());
                             if (Directory.Exists(templatepath))
                                 Directory.Delete(templatepath, true);
                         }

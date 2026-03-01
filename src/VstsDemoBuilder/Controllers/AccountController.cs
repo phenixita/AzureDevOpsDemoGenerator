@@ -71,9 +71,9 @@ namespace VstsDemoBuilder.Controllers
             {
                 if (!string.IsNullOrEmpty(model.name))
                 {
-                    if (System.IO.File.Exists(Server.MapPath("~") + @"\Templates\TemplateSetting.json"))
+                    if (System.IO.File.Exists(AppPath.MapPath("~/Templates/TemplateSetting.json")))
                     {
-                        string privateTemplatesJson = System.IO.File.ReadAllText(Server.MapPath("~") + @"\Templates\TemplateSetting.json");
+                        string privateTemplatesJson = System.IO.File.ReadAllText(AppPath.MapPath("~/Templates/TemplateSetting.json"));
                         templates = Newtonsoft.Json.JsonConvert.DeserializeObject<TemplateSelection.Templates>(privateTemplatesJson);
                         if (templates != null)
                         {
@@ -99,7 +99,7 @@ namespace VstsDemoBuilder.Controllers
 
                 if (!string.IsNullOrEmpty(model.Event))
                 {
-                    string eventsTemplate = Server.MapPath("~") + @"\Templates\Events.json";
+                    string eventsTemplate = AppPath.MapPath("~/Templates/Events.json");
                     if (System.IO.File.Exists(eventsTemplate))
                     {
                         string eventContent = System.IO.File.ReadAllText(eventsTemplate);
@@ -233,7 +233,7 @@ namespace VstsDemoBuilder.Controllers
                     privateTemplate.responseMessage = templateService.checkSelectedTemplateIsPrivate(privateTemplate.privateTemplatePath);
                     if (privateTemplate.responseMessage != "SUCCESS")
                     {
-                        var templatepath = AppPath.MapPath("~") + @"\PrivateTemplates\" + templateName.ToLower().Replace(".zip", "").Trim();
+                        var templatepath = Path.Combine(AppPath.MapPath("~/PrivateTemplates"), templateName.ToLower().Replace(".zip", "").Trim());
                         if (Directory.Exists(templatepath))
                             Directory.Delete(templatepath, true);
                     }

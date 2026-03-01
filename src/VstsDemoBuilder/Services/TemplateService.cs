@@ -24,7 +24,7 @@ namespace VstsDemoBuilder.Services
             try
             {
                 Project model = new Project();
-                string[] dirTemplates = Directory.GetDirectories(AppPath.MapPath("~") + @"\Templates");
+                string[] dirTemplates = Directory.GetDirectories(AppPath.MapPath("~/Templates"));
                 List<string> TemplateNames = new List<string>();
                 //Taking all the template folder and adding to list
                 foreach (string template in dirTemplates)
@@ -33,9 +33,9 @@ namespace VstsDemoBuilder.Services
                     // Reading Template setting file to check for private templates                   
                 }
 
-                if (System.IO.File.Exists(AppPath.MapPath("~") + @"\Templates\TemplateSetting.json"))
+                if (System.IO.File.Exists(AppPath.MapPath("~/Templates/TemplateSetting.json")))
                 {
-                    string templateSetting = model.ReadJsonFile(AppPath.MapPath("~") + @"\Templates\TemplateSetting.json");
+                    string templateSetting = model.ReadJsonFile(AppPath.MapPath("~/Templates/TemplateSetting.json"));
                     templates = JsonConvert.DeserializeObject<TemplateSelection.Templates>(templateSetting);
 
                     foreach (var templateList in templates.GroupwiseTemplates)
@@ -71,7 +71,7 @@ namespace VstsDemoBuilder.Services
             try
             {
                 Project model = new Project();
-                string[] dirTemplates = Directory.GetDirectories(AppPath.MapPath("~") + @"\Templates");
+                string[] dirTemplates = Directory.GetDirectories(AppPath.MapPath("~/Templates"));
                 List<string> TemplateNames = new List<string>();
                 //Taking all the template folder and adding to list
                 foreach (string template in dirTemplates)
@@ -80,9 +80,9 @@ namespace VstsDemoBuilder.Services
                     // Reading Template setting file to check for private templates                   
                 }
 
-                if (System.IO.File.Exists(AppPath.MapPath("~") + @"\Templates\TemplateSetting.json"))
+                if (System.IO.File.Exists(AppPath.MapPath("~/Templates/TemplateSetting.json")))
                 {
-                    string templateSetting = model.ReadJsonFile(AppPath.MapPath("~") + @"\Templates\TemplateSetting.json");
+                    string templateSetting = model.ReadJsonFile(AppPath.MapPath("~/Templates/TemplateSetting.json"));
                     templates = JsonConvert.DeserializeObject<TemplateSelection.Templates>(templateSetting);
 
                     foreach (var groupwiseTemplates in templates.GroupwiseTemplates)
@@ -123,12 +123,13 @@ namespace VstsDemoBuilder.Services
             string template = string.Empty;
             try
             {
-                string templatesPath = AppPath.MapPath("~") + @"\Templates\";
+                string templatesPath = AppPath.MapPath("~/Templates");
 
-                if (System.IO.File.Exists(templatesPath + Path.GetFileName(TemplateName) + @"\ProjectTemplate.json"))
+                string projectTemplatePath = Path.Combine(templatesPath, Path.GetFileName(TemplateName), "ProjectTemplate.json");
+                if (System.IO.File.Exists(projectTemplatePath))
                 {
                     Project objP = new Project();
-                    template = objP.ReadJsonFile(templatesPath + Path.GetFileName(TemplateName) + @"\ProjectTemplate.json");
+                    template = objP.ReadJsonFile(projectTemplatePath);
                 }
                 else
                 {
@@ -156,11 +157,12 @@ namespace VstsDemoBuilder.Services
                 string fileName = Path.GetFileName(TemplateUrl);
                 string extension = Path.GetExtension(fileName);
                 string templateName = ExtractedTemplate.ToLower().Replace(".zip", "").Trim();
-                if (!Directory.Exists(AppPath.MapPath("~") + @"\ExtractedZipFile"))
+                string extractedZipDir = AppPath.MapPath("~/ExtractedZipFile");
+                if (!Directory.Exists(extractedZipDir))
                 {
-                    Directory.CreateDirectory(AppPath.MapPath("~") + @"\ExtractedZipFile");
+                    Directory.CreateDirectory(extractedZipDir);
                 }
-                var path = AppPath.MapPath("~") + @"\ExtractedZipFile\" + ExtractedTemplate;
+                var path = Path.Combine(extractedZipDir, ExtractedTemplate);
                 if (uri.Host == "github.com")
                 {
                     string gUri = uri.ToString();
@@ -206,7 +208,7 @@ namespace VstsDemoBuilder.Services
             }
             finally
             {
-                var zippath = AppPath.MapPath("~") + @"\ExtractedZipFile\" + ExtractedTemplate;
+                var zippath = Path.Combine(AppPath.MapPath("~/ExtractedZipFile"), ExtractedTemplate);
                 if (File.Exists(zippath))
                     File.Delete(zippath);
             }
@@ -221,11 +223,12 @@ namespace VstsDemoBuilder.Services
             {
                 if (File.Exists(path))
                 {
-                    if (!Directory.Exists(AppPath.MapPath("~") + @"\PrivateTemplates"))
+                    string privateTemplatesDir = AppPath.MapPath("~/PrivateTemplates");
+                    if (!Directory.Exists(privateTemplatesDir))
                     {
-                        Directory.CreateDirectory(AppPath.MapPath("~") + @"\PrivateTemplates");
+                        Directory.CreateDirectory(privateTemplatesDir);
                     }
-                    var Extractedpath = AppPath.MapPath("~") + @"\PrivateTemplates\" + templateName;
+                    var Extractedpath = Path.Combine(privateTemplatesDir, templateName);
                     System.IO.Compression.ZipFile.ExtractToDirectory(path, Extractedpath);
 
                     isExtracted = checkTemplateDirectory(Extractedpath);
@@ -291,7 +294,7 @@ namespace VstsDemoBuilder.Services
                 else
                 {
                     string[] subdirs = Directory.GetDirectories(privateTemplatePath);
-                    templatePath = FindPrivateTemplatePath(subdirs[0] + @"\");
+                    templatePath = FindPrivateTemplatePath(subdirs[0] + Path.DirectorySeparatorChar);
                 }
 
             }
@@ -314,12 +317,12 @@ namespace VstsDemoBuilder.Services
                 }
                 else
                 {
-                    bool settingFile = (System.IO.File.Exists(extractPath + "\\ProjectSettings.json") ? true : false);
-                    bool projectFile = (System.IO.File.Exists(extractPath + "\\ProjectTemplate.json") ? true : false);
+                    bool settingFile = System.IO.File.Exists(Path.Combine(extractPath, "ProjectSettings.json"));
+                    bool projectFile = System.IO.File.Exists(Path.Combine(extractPath, "ProjectTemplate.json"));
 
                     if (settingFile && projectFile)
                     {
-                        string projectFileData = System.IO.File.ReadAllText(extractPath + "\\ProjectTemplate.json");
+                        string projectFileData = System.IO.File.ReadAllText(Path.Combine(extractPath, "ProjectTemplate.json"));
                         ProjectSetting settings = JsonConvert.DeserializeObject<ProjectSetting>(projectFileData);
                         response = "SUCCESS";
                     }
@@ -375,19 +378,21 @@ namespace VstsDemoBuilder.Services
             {
                 if (!string.IsNullOrEmpty(Template))
                 {
-                    var templatepath = AppPath.MapPath("~") + @"\PrivateTemplates\" + Template;
+                    string privateTemplatesDir = AppPath.MapPath("~/PrivateTemplates");
+                    var templatepath = Path.Combine(privateTemplatesDir, Template);
                     if (Directory.Exists(templatepath))
                     {
                         Directory.Delete(templatepath, true);
                     }
-                    string[] subdirs = Directory.GetDirectories(AppPath.MapPath("~") + @"\PrivateTemplates\")
+                    string[] subdirs = Directory.GetDirectories(privateTemplatesDir)
                             .Select(Path.GetFileName)
                             .ToArray();
                     foreach (string folderName in subdirs)
                     {
-                        DirectoryInfo d = new DirectoryInfo(AppPath.MapPath("~") + @"\PrivateTemplates\" + folderName);
+                        string folderPath = Path.Combine(privateTemplatesDir, folderName);
+                        DirectoryInfo d = new DirectoryInfo(folderPath);
                         if (d.CreationTime < DateTime.Now.AddHours(-1))
-                            Directory.Delete(AppPath.MapPath("~") + @"\PrivateTemplates\" + folderName, true);
+                            Directory.Delete(folderPath, true);
                     }
                 }
             }

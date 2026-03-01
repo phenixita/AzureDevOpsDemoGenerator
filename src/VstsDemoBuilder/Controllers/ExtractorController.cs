@@ -189,7 +189,7 @@ namespace VstsDemoBuilder.Controllers
                 if (errorMessages != "")
                 {
                     //also, log message to file system
-                    string logPath = Server.MapPath("~") + @"\Log";
+                    string logPath = AppPath.MapPath("~/Log");
                     string accountName = strResult[1];
                     string fileName = string.Format("{0}_{1}.txt", "Extractor_", DateTime.Now.ToString("ddMMMyyyy_HHmmss"));
 
@@ -298,7 +298,7 @@ namespace VstsDemoBuilder.Controllers
         [AllowAnonymous]
         public ActionResult ZipAndDownloadFiles(string fileName)
         {
-            string filePath = Server.MapPath("~") + @"ExtractedTemplate\" + fileName;
+            string filePath = Path.Combine(AppPath.MapPath("~/ExtractedTemplate"), fileName);
             try
             {
                 CreateZips.SourceDirectoriesFiles sfiles = new CreateZips.SourceDirectoriesFiles();
@@ -314,12 +314,8 @@ namespace VstsDemoBuilder.Controllers
                         {
                             CreateZips.FileInfo fileInfo = new CreateZips.FileInfo();
 
-                            string[] fSplit = f.Split('\\');
-                            string splitLength = fSplit[fSplit.Length - 1];
-                            fSplit = splitLength.Split('.');
-
-                            fileInfo.Name = fSplit[0];
-                            fileInfo.Extension = fSplit[1];
+                            fileInfo.Name = Path.GetFileNameWithoutExtension(f);
+                            fileInfo.Extension = Path.GetExtension(f).TrimStart('.');
                             fileInfo.FileBytes = System.IO.File.ReadAllBytes(f);
                             sfiles.Files.Add(fileInfo);
                         }
@@ -337,20 +333,15 @@ namespace VstsDemoBuilder.Controllers
                             if (subDirFiles.Length > 0)
                             {
                                 CreateZips.Folder folder = new CreateZips.Folder();
-                                string[] getFolderName = dir.Split('\\');
-                                string subFolderName = getFolderName[getFolderName.Length - 1];
-                                folder.FolderName = subFolderName;
+                                folder.FolderName = Path.GetFileName(dir);
                                 folder.FolderItems = new List<CreateZips.FolderItem>();
 
                                 foreach (var sdf in subDirFiles)
                                 {
                                     CreateZips.FolderItem folderItem = new CreateZips.FolderItem();
-                                    string[] fSplit = sdf.Split('\\');
-                                    string splitLength = fSplit[fSplit.Length - 1];
-                                    fSplit = splitLength.Split('.');
 
-                                    folderItem.Name = fSplit[0];
-                                    folderItem.Extension = fSplit[1];
+                                    folderItem.Name = Path.GetFileNameWithoutExtension(sdf);
+                                    folderItem.Extension = Path.GetExtension(sdf).TrimStart('.');
                                     folderItem.FileBytes = System.IO.File.ReadAllBytes(sdf);
                                     folder.FolderItems.Add(folderItem);
                                 }
@@ -363,20 +354,15 @@ namespace VstsDemoBuilder.Controllers
                                         if (subDirFilesL2.Length > 0)
                                         {
                                             CreateZips.FolderL2 folderFL2 = new CreateZips.FolderL2();
-                                            string[] getFolderNameL2 = dirL2.Split('\\');
-                                            string subFolderNameL2 = getFolderNameL2[getFolderNameL2.Length - 1];
-                                            folderFL2.FolderName = subFolderNameL2;
+                                            folderFL2.FolderName = Path.GetFileName(dirL2);
                                             folderFL2.FolderItems = new List<CreateZips.FolderItem>();
 
                                             foreach (var sdfL2 in subDirFilesL2)
                                             {
                                                 CreateZips.FolderItem folderItem = new CreateZips.FolderItem();
-                                                string[] fSplit = sdfL2.Split('\\');
-                                                string splitLength = fSplit[fSplit.Length - 1];
-                                                fSplit = splitLength.Split('.');
 
-                                                folderItem.Name = fSplit[0];
-                                                folderItem.Extension = fSplit[1];
+                                                folderItem.Name = Path.GetFileNameWithoutExtension(sdfL2);
+                                                folderItem.Extension = Path.GetExtension(sdfL2).TrimStart('.');
                                                 folderItem.FileBytes = System.IO.File.ReadAllBytes(sdfL2);
                                                 folderFL2.FolderItems.Add(folderItem);
                                             }

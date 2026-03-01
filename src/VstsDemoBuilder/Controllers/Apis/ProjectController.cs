@@ -44,7 +44,7 @@ namespace VstsDemoBuilder.Controllers.Apis
             List<RequestedProject> returnProjects = new List<RequestedProject>();
             try
             {
-                string readErrorMessages = System.IO.File.ReadAllText(string.Format(AppPath.MapPath("~") + @"\JSON\" + @"{0}", "ErrorMessages.json"));
+                string readErrorMessages = System.IO.File.ReadAllText(Path.Combine(AppPath.MapPath("~/JSON"), "ErrorMessages.json"));
                 var messages = JsonConvert.DeserializeObject<Messages>(readErrorMessages);
                 var errormessages = messages.ErrorMessages;
                 List<string> listOfExistedProjects = new List<string>();
@@ -136,7 +136,7 @@ namespace VstsDemoBuilder.Controllers.Apis
                             string privateErrorMessage = templateService.checkSelectedTemplateIsPrivate(PrivateTemplatePath);
                             if (privateErrorMessage != "SUCCESS")
                             {
-                                var templatepath = AppPath.MapPath("~") + @"\PrivateTemplates\" + model.templateName;
+                                var templatepath = Path.Combine(AppPath.MapPath("~/PrivateTemplates"), model.templateName);
                                 if (Directory.Exists(templatepath))
                                 {
                                     Directory.Delete(templatepath, true);
@@ -256,7 +256,7 @@ namespace VstsDemoBuilder.Controllers.Apis
                         string errorMessages = ProjectService.statusMessages[id + "_Errors"];
                         if (!string.IsNullOrEmpty(errorMessages))
                         {
-                            string logPath = AppPath.MapPath("~") + @"\Log";
+                            string logPath = AppPath.MapPath("~/Log");
                             string fileName = string.Format("{0}_{1}.txt", templateUsed, DateTime.Now.ToString("ddMMMyyyy_HHmmss"));
 
                             if (!Directory.Exists(logPath))

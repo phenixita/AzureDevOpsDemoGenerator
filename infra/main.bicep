@@ -19,7 +19,7 @@ param applicationInsightsName string
 param appServicePlanSku string = 'B1'
 
 @description('Linux runtime stack for App Service.')
-param linuxFxVersion string = 'DOTNET|10.0'
+param linuxFxVersion string = 'DOTNETCORE|10.0'
 
 @description('Additional app settings (for example LegacyAppSettings__ClientId).')
 param extraAppSettings object = {}

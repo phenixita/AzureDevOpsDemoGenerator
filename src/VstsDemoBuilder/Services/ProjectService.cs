@@ -145,14 +145,17 @@ namespace VstsDemoBuilder.Services
         /// <param name="FileName"></param>
         public string GetJsonFilePath(bool IsPrivate, string TemplateFolder, string TemplateName, string FileName = "")
         {
+            // Normalize backslashes in FileName for cross-platform compatibility
+            string normalizedFileName = FileName.Replace('\\', Path.DirectorySeparatorChar).TrimStart(Path.DirectorySeparatorChar);
+
             string filePath = string.Empty;
             if (IsPrivate && !string.IsNullOrEmpty(TemplateFolder))
             {
-                filePath = string.Format(TemplateFolder + @"\{0}", FileName);
+                filePath = Path.Combine(TemplateFolder, normalizedFileName);
             }
             else
             {
-                filePath = string.Format(AppPath.MapPath("~") + @"\Templates\" + @"{0}\{1}", TemplateName, FileName);
+                filePath = Path.Combine(AppPath.MapPath("~/Templates"), TemplateName, normalizedFileName);
             }
             return filePath;
         }
@@ -340,7 +343,7 @@ namespace VstsDemoBuilder.Services
                 logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
             }
             //create team project
-            string jsonProject = model.ReadJsonFile(AppPath.MapPath("~") + @"\Templates\" + "CreateProject.json");
+            string jsonProject = model.ReadJsonFile(Path.Combine(AppPath.MapPath("~/Templates"), "CreateProject.json"));
             jsonProject = jsonProject.Replace("$projectName$", model.ProjectName).Replace("$processTemplateId$", processTemplateId);
 
             Projects proj = new Projects(_projectCreationVersion);
@@ -706,9 +709,10 @@ namespace VstsDemoBuilder.Services
             if (Directory.Exists(importSourceCodePath))
             {
                 Directory.GetFiles(importSourceCodePath).ToList().ForEach(i => listImportSourceCodeJsonPaths.Add(i));
-                if (listImportSourceCodeJsonPaths.Contains(importSourceCodePath + "\\GitRepository.json"))
+                string gitRepoJsonPath = Path.Combine(importSourceCodePath, "GitRepository.json");
+                if (listImportSourceCodeJsonPaths.Contains(gitRepoJsonPath))
                 {
-                    listImportSourceCodeJsonPaths.Remove(importSourceCodePath + "\\GitRepository.json");
+                    listImportSourceCodeJsonPaths.Remove(gitRepoJsonPath);
                 }
             }
             foreach (string importSourceCode in listImportSourceCodeJsonPaths)
@@ -726,7 +730,7 @@ namespace VstsDemoBuilder.Services
             Thread.Sleep(10000); //Adding delay to wait for the repository to create and import from the source
 
             //Create WIKI
-            CreateProjetWiki(AppPath.MapPath("~") + @"\Templates\", model, _wikiVersion);
+            CreateProjetWiki(AppPath.MapPath("~/Templates"), model, _wikiVersion);
             CreateCodeWiki(model, _wikiVersion);
 
             List<string> listPullRequestJsonPaths = new List<string>();
@@ -852,14 +856,11 @@ namespace VstsDemoBuilder.Services
                     {
                         foreach (var workItem in workItemFilePaths)
                         {
-                            string[] workItemPatSplit = workItem.Split('\\');
-                            if (workItemPatSplit.Length > 0)
+                            string workItemName = Path.GetFileName(workItem);
+                            if (!string.IsNullOrEmpty(workItemName))
                             {
-                                string workItemName = workItemPatSplit[workItemPatSplit.Length - 1];
-                                if (!string.IsNullOrEmpty(workItemName))
                                 {
-                                    string[] nameExtension = workItemName.Split('.');
-                                    string name = nameExtension[0];
+                                    string name = Path.GetFileNameWithoutExtension(workItemName);
                                     if (!workItems.ContainsKey(name))
                                     {
                                         workItems.Add(name, model.ReadJsonFile(workItem));
@@ -1630,7 +1631,7 @@ namespace VstsDemoBuilder.Services
             {
                 foreach (var c in child.children)
                 {
-                    path += child.name + "\\";
+                    path += child.name + "/";
                     var nd = objClassification.MoveIteration(model.ProjectName, path, c.id);
 
                     if (c.hasChildren)
@@ -2258,7 +2259,7 @@ namespace VstsDemoBuilder.Services
                 bool isFolderCreated=false;
                 if (!string.IsNullOrEmpty(teamName))
                 {
-                    string createQueryFolderJson = File.ReadAllText(AppPath.MapPath("~") + @"PreSetting\\CreateQueryFolder.json");
+                    string createQueryFolderJson = File.ReadAllText(AppPath.MapPath("~/PreSetting/CreateQueryFolder.json"));
                     createQueryFolderJson = createQueryFolderJson.Replace("$TeamName$", teamName);
                     QueryResponse createFolderResponse = _newobjQuery.CreateQuery(model.ProjectName, createQueryFolderJson);
                     isFolderCreated=createFolderResponse.id!=null? true : false;
@@ -2720,7 +2721,7 @@ namespace VstsDemoBuilder.Services
                 //templatesFolder + model.SelectedTemplate + "\\Wiki\\ProjectWiki";
                 if (Directory.Exists(projectWikiFolderPath))
                 {
-                    string createWiki = string.Format(templatesFolder + "\\CreateWiki.json"); // check is path
+                    string createWiki = Path.Combine(templatesFolder, "CreateWiki.json"); // check is path
                     if (File.Exists(createWiki))
                     {
                         string jsonString = File.ReadAllText(createWiki);
@@ -2731,9 +2732,8 @@ namespace VstsDemoBuilder.Services
                         foreach (var dir in subDirectories)
                         {
                             //dirName==parentName//
-                            string[] dirSplit = dir.Split('\\');
-                            string dirName = dirSplit[dirSplit.Length - 1];
-                            string sampleContent = File.ReadAllText(templatesFolder + "\\SampleContent.json");
+                            string dirName = Path.GetFileName(dir);
+                            string sampleContent = File.ReadAllText(Path.Combine(templatesFolder, "SampleContent.json"));
                             sampleContent = sampleContent.Replace("$Content$", "Sample wiki content");
                             bool isPage = manageWiki.CreateUpdatePages(sampleContent, model.Environment.ProjectName, projectWikiResponse.id, dirName);//check is created
 
@@ -2745,8 +2745,7 @@ namespace VstsDemoBuilder.Services
                                     List<string> childFileNames = new List<string>();
                                     foreach (var file in getFiles)
                                     {
-                                        string[] fileNameExtension = file.Split('\\');
-                                        string fileName = (fileNameExtension[fileNameExtension.Length - 1].Split('.'))[0];
+                                        string fileName = Path.GetFileNameWithoutExtension(file);
                                         string fileContent = model.ReadJsonFile(file);
                                         bool isCreated = false;
                                         Dictionary<string, string> dic = new Dictionary<string, string>();
@@ -2772,7 +2771,7 @@ namespace VstsDemoBuilder.Services
                                         {
                                             if (child != dirName)
                                             {
-                                                string movePages = File.ReadAllText(templatesFolder + @"\MovePages.json");
+                                                string movePages = File.ReadAllText(Path.Combine(templatesFolder, "MovePages.json"));
                                                 if (!string.IsNullOrEmpty(movePages))
                                                 {
                                                     movePages = movePages.Replace("$ParentFile$", dirName).Replace("$ChildFile$", child);
@@ -2807,8 +2806,7 @@ namespace VstsDemoBuilder.Services
 
                         foreach (string wiki in wikiFilePaths)
                         {
-                            string[] nameExtension = wiki.Split('\\');
-                            string name = (nameExtension[nameExtension.Length - 1]).Split('.')[0];
+                            string name = Path.GetFileNameWithoutExtension(wiki);
                             string json = model.ReadJsonFile(wiki);
                             bool isImported = false;
                             foreach (string repository in model.Environment.repositoryIdList.Keys)
@@ -2872,10 +2870,10 @@ namespace VstsDemoBuilder.Services
             {
                 string groupDetails = "";
                 TemplateSelection.Templates templates = new TemplateSelection.Templates();
-                string templatesPath = ""; templatesPath = AppPath.MapPath("~") + @"\Templates\";
-                if (File.Exists(templatesPath + "TemplateSetting.json"))
+                string templatesPath = AppPath.MapPath("~/Templates");
+                if (File.Exists(Path.Combine(templatesPath, "TemplateSetting.json")))
                 {
-                    groupDetails = File.ReadAllText(templatesPath + @"\TemplateSetting.json");
+                    groupDetails = File.ReadAllText(Path.Combine(templatesPath, "TemplateSetting.json"));
                     templates = JsonConvert.DeserializeObject<TemplateSelection.Templates>(groupDetails);
                     foreach (var template in templates.GroupwiseTemplates.FirstOrDefault().Template)
                     {
@@ -3035,7 +3033,7 @@ namespace VstsDemoBuilder.Services
         /// <returns></returns>
         public bool WhereDoseTemplateBelongTo(string templatName)
         {
-            string privatePath = AppPath.MapPath("~") + @"\PrivateTemplates\";
+            string privatePath = AppPath.MapPath("~/PrivateTemplates");
             string privateTemplate = Path.Combine(privatePath, templatName);
 
             if (!Directory.Exists(privatePath))
