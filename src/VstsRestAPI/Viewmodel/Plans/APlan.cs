@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace VstsRestAPI.Viewmodel.Plans
 {
-   public class APlan
+    public class APlan
     {
         public class CardSettings
         {

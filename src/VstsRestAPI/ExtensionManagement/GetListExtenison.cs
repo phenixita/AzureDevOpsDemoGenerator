@@ -13,7 +13,7 @@ namespace VstsRestAPI.ExtensionManagement
         //GET https://extmgmt.dev.azure.com/{organization}/_apis/extensionmanagement/installedextensions?api-version=4.1-preview.1
         public GetExtensions.ExtensionsList GetInstalledExtensions()
         {
-            using(var client = GetHttpClient())
+            using (var client = GetHttpClient())
             {
                 var request = _configuration.UriString + "/_apis/extensionmanagement/installedextensions?api-version" + _configuration.VersionNumber;
                 HttpResponseMessage response = client.GetAsync(request).Result;
@@ -23,7 +23,8 @@ namespace VstsRestAPI.ExtensionManagement
                     GetExtensions.ExtensionsList extensionsList = JsonConvert.DeserializeObject<GetExtensions.ExtensionsList>(res);
                     return extensionsList;
                 }
-                else{
+                else
+                {
                     var errorMessage = response.Content.ReadAsStringAsync();
                     string error = Utility.GeterroMessage(errorMessage.Result.ToString());
                     this.LastFailureMessage = error;

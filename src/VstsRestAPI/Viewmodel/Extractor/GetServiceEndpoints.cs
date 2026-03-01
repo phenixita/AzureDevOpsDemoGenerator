@@ -27,7 +27,7 @@ namespace VstsRestAPI.Viewmodel.Extractor
         {
             public string username { get; set; }
             public string certificate { get; set; }
-            public string apitoken { get; set; }            
+            public string apitoken { get; set; }
             public string password { get; set; }
             public string email { get; set; }
             public string registry { get; set; }

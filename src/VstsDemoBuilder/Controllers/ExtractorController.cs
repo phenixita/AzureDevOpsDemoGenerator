@@ -23,8 +23,8 @@ namespace VstsDemoBuilder.Controllers
 
     public class ExtractorController : CompatController
     {
-        
-        private delegate string[] ProcessEnvironment(Project model);        
+
+        private delegate string[] ProcessEnvironment(Project model);
         private IExtractorService extractorService;
         private IAccountService accountService;
         public ExtractorController()

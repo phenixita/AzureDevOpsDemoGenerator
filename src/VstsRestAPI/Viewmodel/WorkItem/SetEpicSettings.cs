@@ -9,7 +9,7 @@ namespace VstsRestAPI.Viewmodel.WorkItem
 {
     public class SetEpicSettings
     {
-        public class Epiclist 
+        public class Epiclist
         {
             [JsonProperty("backlogVisibilities")]
             public BacklogVisibilities backlogVisibilities { get; set; }

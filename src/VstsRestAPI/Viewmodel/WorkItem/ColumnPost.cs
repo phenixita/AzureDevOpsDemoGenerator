@@ -38,7 +38,7 @@ namespace VstsRestAPI.Viewmodel.WorkItem
         {
             [JsonProperty(PropertyName = "User Story")]
             public string UserStory { get; set; }
-            [JsonProperty(PropertyName ="Bug")] 
+            [JsonProperty(PropertyName = "Bug")]
             public string bug { get; set; }
         }
 

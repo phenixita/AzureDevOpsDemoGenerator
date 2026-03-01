@@ -31,7 +31,7 @@ namespace VstsDemoBuilder.Controllers
         [AllowAnonymous]
         public ActionResult Redirect()
         {
-                // Here we get the Code in the Query String, using that we can get access token
+            // Here we get the Code in the Query String, using that we can get access token
             var request = Request;
             // Here we get the Code in the Query String, using that we can get access token
             string code = Request.Query["code"];

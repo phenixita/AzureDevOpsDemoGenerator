@@ -13,7 +13,7 @@ namespace VstsDemoBuilder.ServiceInterfaces
         JObject GetStatusMessage(string id);
 
         HttpResponseMessage GetprojectList(string accname, string pat);
-     
+
         string GetJsonFilePath(bool IsPrivate, string TemplateFolder, string TemplateName, string FileName = "");
 
         string[] CreateProjectEnvironment(Project model);
@@ -23,6 +23,6 @@ namespace VstsDemoBuilder.ServiceInterfaces
         bool InstallExtensions(Project model, string accountName, string PAT);
 
         bool WhereDoseTemplateBelongTo(string templatName);
-        
+
     }
 }

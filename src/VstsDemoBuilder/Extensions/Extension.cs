@@ -27,6 +27,6 @@ namespace VstsDemoBuilder.Extensions
         {
             str = str + "_Errors";
             return str;
-        } 
+        }
     }
 }

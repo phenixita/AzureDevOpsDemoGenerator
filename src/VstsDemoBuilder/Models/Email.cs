@@ -9,14 +9,14 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace VstsDemoBuilder.Models
 {
-	public class Email
-	{
-		public string EmailAddress { get; set; }
-		public string AccountName { get; set; }
-		public string ErrorLog { get; set; }
+    public class Email
+    {
+        public string EmailAddress { get; set; }
+        public string AccountName { get; set; }
+        public string ErrorLog { get; set; }
 
-		public bool SendEmail(string toEmail, string body, string subject)
-		{
+        public bool SendEmail(string toEmail, string body, string subject)
+        {
             MailMessage newmsg = new MailMessage(ConfigurationManager.AppSettings["from"], toEmail)
             {
                 //newmsg.From = new MailAddress(ConfigurationManager.AppSettings["from"]);
@@ -40,14 +40,14 @@ namespace VstsDemoBuilder.Models
                 EnableSsl = Convert.ToBoolean(ConfigurationManager.AppSettings["enableSSL"])
             };
             try
-			{
-				smtp.Send(newmsg);
-			}
-			catch (Exception)
-			{
-				return false;
-			}
-			return true;
-		}
-	}
+            {
+                smtp.Send(newmsg);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            return true;
+        }
+    }
 }

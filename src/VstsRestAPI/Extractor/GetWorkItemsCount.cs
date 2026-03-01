@@ -38,7 +38,7 @@ namespace VstsRestAPI.Extractor
                 {
                     query = "SELECT [System.Id], [System.WorkItemType], [System.Title] FROM workitems" +
                             " WHERE [System.TeamProject] = '" + Project + "'" +
-                            " AND [System.WorkItemType] = '"+ workItemType + "'"
+                            " AND [System.WorkItemType] = '" + workItemType + "'"
                 };
                 using (var client = GetHttpClient())
                 {
@@ -131,7 +131,7 @@ namespace VstsRestAPI.Extractor
             {
                 using (var client = GetHttpClient())
                 {
-                    HttpResponseMessage response = client.GetAsync(string.Format("{0}/{1}/_apis/wit/workitemtypes?api-version={2}", _configuration.UriString, _configuration.Project ,_configuration.VersionNumber)).Result;
+                    HttpResponseMessage response = client.GetAsync(string.Format("{0}/{1}/_apis/wit/workitemtypes?api-version={2}", _configuration.UriString, _configuration.Project, _configuration.VersionNumber)).Result;
                     if (response.IsSuccessStatusCode)
                     {
                         WorkItemNames.Names workItemNames = JsonConvert.DeserializeObject<WorkItemNames.Names>(response.Content.ReadAsStringAsync().Result);

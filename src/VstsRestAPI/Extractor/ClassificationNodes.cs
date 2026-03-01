@@ -62,7 +62,7 @@ namespace VstsRestAPI.Extractor
                         TeamList teamObj = JsonConvert.DeserializeObject<TeamList>(result);
                         foreach (var team in teamObj.value)
                         {
-                            if (team.id==defaultTeamId)
+                            if (team.id == defaultTeamId)
                             {
                                 team.isDefault = "true";
                             }
@@ -239,7 +239,7 @@ namespace VstsRestAPI.Extractor
             return new ExportedIterations.Iterations();
         }
 
-      //  GET https://dev.azure.com/{organization}/_apis/projects/{projectId}/teams?api-version=7.0
+        //  GET https://dev.azure.com/{organization}/_apis/projects/{projectId}/teams?api-version=7.0
 
         public HttpResponseMessage GetTeams()
         {
@@ -251,7 +251,7 @@ namespace VstsRestAPI.Extractor
                     return response;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + ex.Message + "\n" + ex.StackTrace + "\n");
             }

@@ -992,7 +992,7 @@ namespace VstsDemoBuilder.Services
             }
 
             //Create Branch Policy
-            bool isBuildPolicyCreated = CreateBranchPolicy(model,_buildVersion);
+            bool isBuildPolicyCreated = CreateBranchPolicy(model, _buildVersion);
             if (isBuildPolicyCreated)
             {
                 AddMessage(model.id, "Branch Policy created");
@@ -1021,7 +1021,7 @@ namespace VstsDemoBuilder.Services
                     }
                     string dashboardQueryPath = string.Empty;
                     dashboardQueryPath = GetJsonFilePath(model.IsPrivatePath, model.PrivateTemplatePath, templateUsed, @"\Dashboard\Queries");
-                    if(teamName != null)
+                    if (teamName != null)
                     {
                         dashboardQueryPath = GetJsonFilePath(model.IsPrivatePath, model.PrivateTemplatePath, templateUsed, $"\\Dashboard\\{teamName}\\Queries");
                     }
@@ -1030,7 +1030,7 @@ namespace VstsDemoBuilder.Services
                         listDashboardQueriesPath = Directory.GetFiles(dashboardQueryPath).ToList();
                         if (listDashboardQueriesPath.Count > 0)
                         {
-                            CreateQueryAndWidgets(model, listDashboardQueriesPath, _queriesVersion, _dashboardVersion, _releaseVersion, _projectCreationVersion, _boardVersion,teamName);
+                            CreateQueryAndWidgets(model, listDashboardQueriesPath, _queriesVersion, _dashboardVersion, _releaseVersion, _projectCreationVersion, _boardVersion, teamName);
                         }
                     }
                 }
@@ -1053,13 +1053,13 @@ namespace VstsDemoBuilder.Services
                 }
                 BuildandReleaseDefs objBuild = new BuildandReleaseDefs(buildConfig);
                 List<JObject> buildDefsList = objBuild.ExportBuildDefinitions();
-                if (buildDefsList!=null && buildDefsList.Count > 0)
+                if (buildDefsList != null && buildDefsList.Count > 0)
                 {
                     int buildDefId = 0;
-                    foreach(JObject buildDef in buildDefsList)
+                    foreach (JObject buildDef in buildDefsList)
                     {
                         var yamalfilename = buildDef["process"]["yamlFilename"];
-                        if (yamalfilename!=null && !string.IsNullOrEmpty(yamalfilename.ToString()))
+                        if (yamalfilename != null && !string.IsNullOrEmpty(yamalfilename.ToString()))
                         {
                             buildDefId = Convert.ToInt32(buildDef["id"]);
                         }
@@ -1067,7 +1067,7 @@ namespace VstsDemoBuilder.Services
                     BranchPolicyTypes.PolicyTypes policyTypes = objBuild.GetPolicyTypes();
                     if (policyTypes != null)
                     {
-                        if(branchPolicyPaths.Count > 0)
+                        if (branchPolicyPaths.Count > 0)
                         {
                             foreach (string branchPolicyJsonPath in branchPolicyPaths)
                             {
@@ -1095,10 +1095,10 @@ namespace VstsDemoBuilder.Services
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + "\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                AddMessage(model.id.ErrorId(), "Error while creating branch policy : "+ex.Message);
+                AddMessage(model.id.ErrorId(), "Error while creating branch policy : " + ex.Message);
             }
             return isBranchPolicyCreated;
         }
@@ -2239,7 +2239,7 @@ namespace VstsDemoBuilder.Services
         /// <param name="_configuration2"></param>
         /// <param name="_configuration3"></param>
         /// <param name="releaseConfig"></param>
-        public void CreateQueryAndWidgets(Project model, List<string> listQueries, VstsRestAPI.Configuration _queriesVersion, VstsRestAPI.Configuration _dashboardVersion, VstsRestAPI.Configuration _releaseConfig, VstsRestAPI.Configuration _projectConfig, VstsRestAPI.Configuration _boardConfig,string teamName=null)
+        public void CreateQueryAndWidgets(Project model, List<string> listQueries, VstsRestAPI.Configuration _queriesVersion, VstsRestAPI.Configuration _dashboardVersion, VstsRestAPI.Configuration _releaseConfig, VstsRestAPI.Configuration _projectConfig, VstsRestAPI.Configuration _boardConfig, string teamName = null)
         {
             try
             {
@@ -2248,7 +2248,7 @@ namespace VstsDemoBuilder.Services
                 List<QueryResponse> queryResults = new List<QueryResponse>();
 
                 //GetDashBoardDetails
-                string dashBoardId = objWidget.GetDashBoardId(model.ProjectName,teamName);
+                string dashBoardId = objWidget.GetDashBoardId(model.ProjectName, teamName);
                 Thread.Sleep(2000); // Adding delay to get the existing dashboard ID 
 
                 if (!string.IsNullOrEmpty(objQuery.LastFailureMessage))
@@ -2256,13 +2256,13 @@ namespace VstsDemoBuilder.Services
                     AddMessage(model.id.ErrorId(), "Error while getting dashboardId: " + objWidget.LastFailureMessage + Environment.NewLine);
                 }
                 Queries _newobjQuery = new Queries(_queriesVersion);
-                bool isFolderCreated=false;
+                bool isFolderCreated = false;
                 if (!string.IsNullOrEmpty(teamName))
                 {
                     string createQueryFolderJson = File.ReadAllText(AppPath.MapPath("~/PreSetting/CreateQueryFolder.json"));
                     createQueryFolderJson = createQueryFolderJson.Replace("$TeamName$", teamName);
                     QueryResponse createFolderResponse = _newobjQuery.CreateQuery(model.ProjectName, createQueryFolderJson);
-                    isFolderCreated=createFolderResponse.id!=null? true : false;
+                    isFolderCreated = createFolderResponse.id != null ? true : false;
                 }
                 foreach (string query in listQueries)
                 {
@@ -2272,7 +2272,7 @@ namespace VstsDemoBuilder.Services
                     QueryResponse response = new QueryResponse();
                     if (isFolderCreated)
                     {
-                        response = _newobjQuery.CreateQuery(model.ProjectName, json,teamName);
+                        response = _newobjQuery.CreateQuery(model.ProjectName, json, teamName);
                     }
                     else
                     {
@@ -2288,7 +2288,7 @@ namespace VstsDemoBuilder.Services
                 }
                 //Create DashBoards
                 string dashBoardTemplate = string.Empty;
-                if(!string.IsNullOrEmpty(teamName))
+                if (!string.IsNullOrEmpty(teamName))
                 {
                     dashBoardTemplate = GetJsonFilePath(model.IsPrivatePath, model.PrivateTemplatePath, model.SelectedTemplate, $"\\Dashboard\\{teamName}\\Dashboard.json");
                 }
@@ -2303,9 +2303,9 @@ namespace VstsDemoBuilder.Services
                     dashBoard.position = 4;
 
                     string jsonDashBoard = Newtonsoft.Json.JsonConvert.SerializeObject(dashBoard);
-                    string dashBoardIdToDelete = objWidget.CreateNewDashBoard(model.ProjectName, jsonDashBoard,teamName);
+                    string dashBoardIdToDelete = objWidget.CreateNewDashBoard(model.ProjectName, jsonDashBoard, teamName);
 
-                    bool isDashboardDeleted = objWidget.DeleteDefaultDashboard(model.ProjectName, dashBoardId,teamName);
+                    bool isDashboardDeleted = objWidget.DeleteDefaultDashboard(model.ProjectName, dashBoardId, teamName);
 
                     if (model.SelectedTemplate.ToLower() == "bikesharing360")
                     {
@@ -2602,13 +2602,13 @@ namespace VstsDemoBuilder.Services
                             {
                                 string queryName = Path.GetFileName(queries).Replace(".json", string.Empty);
                                 string placeHolder = "$" + queryName + "$";
-                                QueryResponse query = objQuery.GetQueryByPathAndName(model.ProjectName, queryName, "Shared%20Queries/"+teamName);
+                                QueryResponse query = objQuery.GetQueryByPathAndName(model.ProjectName, queryName, "Shared%20Queries/" + teamName);
                                 dashBoardTemplate = dashBoardTemplate.Replace(placeHolder, query.id != null ? query.id : string.Empty);
                             }
                             dashBoardTemplate = dashBoardTemplate.Replace("$projectId$", model.Environment.ProjectId != null ? model.Environment.ProjectId : string.Empty).
                                 Replace("$DefaultTeamId$", teamDetails.id != null ? teamDetails.id : string.Empty).Replace("$startDate$", startDate).Replace("$endDate$", endDate);
-                            string dashboardId = objWidget.CreateNewDashBoard(model.ProjectName, dashBoardTemplate,teamName);
-                            objWidget.DeleteDefaultDashboard(model.ProjectName, dashBoardIdToDelete,teamName);
+                            string dashboardId = objWidget.CreateNewDashBoard(model.ProjectName, dashBoardTemplate, teamName);
+                            objWidget.DeleteDefaultDashboard(model.ProjectName, dashBoardIdToDelete, teamName);
                         }
                     }
                 }
@@ -3072,7 +3072,7 @@ namespace VstsDemoBuilder.Services
                         foreach (var dfile in files)
                         {
                             string content = File.ReadAllText(dfile);
-                            foreach(var team in rootTeams.value)
+                            foreach (var team in rootTeams.value)
                             {
                                 content = content.Replace($"${team.name}$", team.id);
                             }
@@ -3106,7 +3106,7 @@ namespace VstsDemoBuilder.Services
             try
             {
             }
-            catch(Exception)
+            catch (Exception)
             {
 
             }

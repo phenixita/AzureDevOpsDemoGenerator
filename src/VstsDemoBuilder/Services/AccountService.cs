@@ -11,7 +11,7 @@ using VstsDemoBuilder.ServiceInterfaces;
 
 namespace VstsDemoBuilder.Services
 {
-    public class AccountService :IAccountService
+    public class AccountService : IAccountService
     {
         /// <summary>
         /// Build token request body for Entra OAuth 2.0 authorization code exchange
