@@ -6,13 +6,13 @@
       "value": "westeurope"
     },
     "appServicePlanName": {
-      "value": "ado-demo-workshop-plan"
+      "value": "asp-azdodemogen-prod"
     },
     "webAppName": {
-      "value": "ado-demo-workshop-app"
+      "value": "azdodemogen"
     },
     "applicationInsightsName": {
-      "value": "ado-demo-workshop-ai"
+      "value": "ai-azdodemogen-prod"
     },
     "appServicePlanSku": {
       "value": "B1"
