@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using AzdoGenCli.Infrastructure;
+using AzdoGenCli.Models;
+using AzdoGenCli.Services.Exceptions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using VstsDemoBuilder.Models;
@@ -17,6 +19,93 @@ namespace AzdoGenCli.Services
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        }
+
+        public DeleteProjectResult DeleteProject(DeleteProjectRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            _logger.LogInformation("Starting project deletion: Project={Project} Org={Org}",
+                request.ProjectName, request.OrganizationName);
+
+            // Build VstsRestAPI configuration
+            var defaultHost = _configuration["LegacyAppSettings:DefaultHost"] ?? "https://dev.azure.com/";
+            var apiVersion = _configuration["LegacyAppSettings:ProjectCreationVersion"] ?? "5.0";
+
+            var config = new VstsRestAPI.Configuration
+            {
+                UriString = $"{defaultHost}{request.OrganizationName}/",
+                AccountName = request.OrganizationName,
+                PersonalAccessToken = request.AccessToken,
+                VersionNumber = apiVersion
+            };
+
+            var projectsApi = new VstsRestAPI.ProjectsAndTeams.Projects(config);
+
+            // Get project ID by name
+            string projectId;
+            try
+            {
+                projectId = projectsApi.GetProjectIdByName(request.ProjectName);
+
+                // Check for error values returned by GetProjectIdByName
+                if (string.IsNullOrEmpty(projectId) ||
+                    projectId == Guid.Empty.ToString() ||
+                    projectId == "-1")
+                {
+                    throw new ProjectNotFoundException(request.ProjectName);
+                }
+
+                _logger.LogDebug("Found project ID: {ProjectId}", projectId);
+            }
+            catch (ProjectNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to lookup project {Project}", request.ProjectName);
+                throw new ProjectNotFoundException(request.ProjectName);
+            }
+
+            // Delete project
+            var response = projectsApi.DeleteProject(projectId);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new AuthenticationFailedException("Authentication failed");
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                throw new AuthorizationFailedException("Failed to delete project: Unauthorized / Insufficient permissions.");
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                throw new ProjectNotFoundException(request.ProjectName);
+            }
+
+            if (response.StatusCode != System.Net.HttpStatusCode.Accepted)
+            {
+                var errorContent = response.Content.ReadAsStringAsync().Result;
+                _logger.LogError("Delete failed with status {Status}: {Error}",
+                    response.StatusCode, errorContent);
+                throw new ProjectDeletionFailedException(
+                    response.StatusCode,
+                    $"Failed with status {response.StatusCode}");
+            }
+
+            // Success - 202 Accepted
+            _logger.LogInformation("Project {Project} deletion accepted (202)", request.ProjectName);
+
+            return new DeleteProjectResult(
+                OrganizationName: request.OrganizationName,
+                ProjectName: request.ProjectName,
+                ProjectId: projectId,
+                DeletionAccepted: true,
+                OperationId: null,
+                OperationUrl: null);
         }
 
         public string[] CreateProjectEnvironment(CliInput input, string templatesRoot)

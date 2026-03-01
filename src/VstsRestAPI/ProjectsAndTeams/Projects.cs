@@ -139,6 +139,30 @@ namespace VstsRestAPI.ProjectsAndTeams
             return Guid.Empty.ToString();
         }
 
+        public HttpResponseMessage DeleteProject(string projectId)
+        {
+            HttpResponseMessage response = null;
+            try
+            {
+                using (var client = GetHttpClient())
+                {
+                    response = client.DeleteAsync($"_apis/projects/{projectId}?api-version={_configuration.VersionNumber}").Result;
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = response.Content.ReadAsStringAsync().Result;
+                        LastFailureMessage = $"Delete project failed: {response.StatusCode} - {errorContent}";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LastFailureMessage = $"Exception during project deletion: {ex.Message}";
+            }
+
+            return response;
+        }
+
         /// <summary>
         /// Get project to know the status of the project
         /// </summary>

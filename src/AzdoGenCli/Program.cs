@@ -10,6 +10,8 @@ using System;
 using System.IO;
 using System.Linq;
 
+using AzdoGenCli.Services.Exceptions;
+
 namespace AzdoGenCli;
 
 class Program
@@ -99,6 +101,159 @@ class Program
                 Console.ResetColor();
                 logger.LogError("Authentication failed: No access token obtained");
                 return 1;
+            }
+
+            // Interactive Mode Detection
+            bool usedOAuth = oauthToken != null;
+            bool explicitDelete = cliArgs.DeleteProject;
+            bool explicitCreateInputs = !string.IsNullOrWhiteSpace(cliArgs.Org) || 
+                                        !string.IsNullOrWhiteSpace(cliArgs.Project) || 
+                                        !string.IsNullOrWhiteSpace(cliArgs.Template);
+            bool isInteractiveMode = usedOAuth && !explicitDelete && !explicitCreateInputs;
+
+            if (isInteractiveMode)
+            {
+                Console.WriteLine();
+                Console.WriteLine("═══════════════════════════════════════════════════════");
+                Console.WriteLine("  Azure DevOps Demo Generator - Interactive Mode");
+                Console.WriteLine("═══════════════════════════════════════════════════════");
+                Console.WriteLine();
+                Console.WriteLine("What would you like to do?");
+                Console.WriteLine();
+                Console.WriteLine("  1. Create a new project");
+                Console.WriteLine("  2. Delete an existing project");
+                Console.WriteLine();
+                Console.Write("Enter your choice (1 or 2): ");
+                
+                var choice = Console.ReadLine()?.Trim();
+                Console.WriteLine();
+
+                if (choice == "2")
+                {
+                    cliArgs.DeleteProject = true;
+                    logger.LogInformation("User selected delete operation from interactive menu");
+                }
+                else if (choice == "1")
+                {
+                    logger.LogInformation("User selected create operation from interactive menu");
+                    // Continue to create flow
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("✗ Invalid choice. Please enter 1 or 2.");
+                    Console.ResetColor();
+                    return 1;
+                }
+            }
+
+            // Handle --delete-project command
+            if (cliArgs.DeleteProject)
+            {
+                // If user chose delete from interactive menu and org/project is empty, prompt
+                if (isInteractiveMode)
+                {
+                    if (string.IsNullOrEmpty(cliArgs.Org))
+                    {
+                        Console.Write("Enter organization name: ");
+                        cliArgs.Org = Console.ReadLine()?.Trim();
+                        Console.WriteLine();
+                    }
+                    if (string.IsNullOrEmpty(cliArgs.Project))
+                    {
+                        Console.Write("Enter project name to delete: ");
+                        cliArgs.Project = Console.ReadLine()?.Trim();
+                        Console.WriteLine();
+                    }
+                }
+
+                if (string.IsNullOrEmpty(cliArgs.Org) || string.IsNullOrEmpty(cliArgs.Project))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("✗ Error: Organization and project name are required for delete operation");
+                    Console.ResetColor();
+                    logger.LogError("Delete operation failed: missing org or project");
+                    return 1;
+                }
+
+                // Confirmation prompt (unless --force)
+                if (!cliArgs.Force)
+                {
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"⚠ WARNING: You are about to delete project '{cliArgs.Project}'");
+                    Console.ResetColor();
+                    Console.Write($"Are you sure you want to delete project {cliArgs.Project}? This action cannot be undone. (y/n): ");
+                    var confirmation = Console.ReadLine()?.Trim().ToLowerInvariant();
+
+                    if (confirmation != "y" && confirmation != "yes")
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine("Operation cancelled by user.");
+                        logger.LogInformation("Delete operation cancelled by user");
+                        return 0;
+                    }
+                    Console.WriteLine();
+                }
+
+                try
+                {
+                    var deleteRequest = new DeleteProjectRequest(
+                        OrganizationName: cliArgs.Org,
+                        ProjectName: cliArgs.Project,
+                        AccessToken: accessToken,
+                        Force: cliArgs.Force);
+
+                    var cliService = new CliProjectService(loggerFactory.CreateLogger<CliProjectService>(), configuration);
+                    var result = cliService.DeleteProject(deleteRequest);
+
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"✓ Project '{result.ProjectName}' deletion initiated successfully");
+                    Console.ResetColor();
+                    logger.LogInformation("Project {Project} deleted successfully in organization {Org}",
+                        result.ProjectName, result.OrganizationName);
+                    return 0;
+                }
+                catch (ProjectNotFoundException ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(ex.Message);
+                    Console.ResetColor();
+                    logger.LogError(ex, "Project not found");
+                    return 1;
+                }
+                catch (AuthenticationFailedException ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Authentication failed");
+                    Console.ResetColor();
+                    logger.LogError(ex, "Authentication failed");
+                    return 1;
+                }
+                catch (AuthorizationFailedException ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(ex.Message);
+                    Console.ResetColor();
+                    logger.LogError(ex, "Authorization failed");
+                    return 1;
+                }
+                catch (ProjectDeletionFailedException ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"✗ Failed to delete project: {ex.Message}");
+                    Console.ResetColor();
+                    logger.LogError(ex, "Project deletion failed");
+                    return 1;
+                }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"✗ Unexpected error: {ex.Message}");
+                    Console.ResetColor();
+                    logger.LogError(ex, "Unexpected error during project deletion");
+                    return 1;
+                }
             }
 
             logger.LogDebug("Access token obtained (length: {TokenLength})", accessToken.Length);
