@@ -69,6 +69,7 @@ jobs:
 
       - name: Build extra app settings payload
         id: appsettings
+        shell: python
         env:
           LEGACY_CLIENT_ID: ${{ secrets.LEGACY_CLIENT_ID }}
           LEGACY_CLIENT_SECRET: ${{ secrets.LEGACY_CLIENT_SECRET }}
@@ -85,7 +86,6 @@ jobs:
           LEGACY_EMAIL_USERNAME: ${{ secrets.LEGACY_EMAIL_USERNAME }}
           LEGACY_EMAIL_PASSWORD: ${{ secrets.LEGACY_EMAIL_PASSWORD }}
         run: |
-          python - <<'PY'
           import json
           import os
 
@@ -110,7 +110,6 @@ jobs:
           output_file = os.environ["GITHUB_OUTPUT"]
           with open(output_file, "a", encoding="utf-8") as f:
               f.write(f"json={json.dumps(app_settings, separators=(',', ':'))}\n")
-          PY
 
       - name: Deploy Bicep infrastructure
         id: infra
