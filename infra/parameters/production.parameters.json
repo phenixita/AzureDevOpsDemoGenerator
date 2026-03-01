@@ -9,7 +9,7 @@
       "value": "asp-azdodemogen-prod"
     },
     "webAppName": {
-      "value": "azdodemogen"
+      "value": "azdodemogenerator"
     },
     "applicationInsightsName": {
       "value": "ai-azdodemogen-prod"
