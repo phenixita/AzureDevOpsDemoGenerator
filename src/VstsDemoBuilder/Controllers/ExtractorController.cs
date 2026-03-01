@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VstsDemoBuilder.Infrastructure;
@@ -25,12 +26,13 @@ namespace VstsDemoBuilder.Controllers
     {
 
         private delegate string[] ProcessEnvironment(Project model);
-        private IExtractorService extractorService;
-        private IAccountService accountService;
-        public ExtractorController()
+        private readonly IExtractorService extractorService;
+        private readonly IAccountService accountService;
+
+        public ExtractorController(IExtractorService extractorService, IAccountService accountService)
         {
-            accountService = new AccountService();
-            extractorService = new ExtractorService();
+            this.accountService = accountService;
+            this.extractorService = extractorService;
         }
 
         [AllowAnonymous]
@@ -49,7 +51,7 @@ namespace VstsDemoBuilder.Controllers
             return Content(currentProgress);
         }
         [AllowAnonymous]
-        public ActionResult Index(ProjectList.ProjectDetails model)
+        public async Task<ActionResult> Index(ProjectList.ProjectDetails model)
         {
             try
             {
@@ -71,7 +73,7 @@ namespace VstsDemoBuilder.Controllers
                 else
                 {
                     accessDetails.access_token = pat;
-                    ProfileDetails profile = accountService.GetProfile(accessDetails);
+                    ProfileDetails profile = await accountService.GetProfileAsync(accessDetails, HttpContext.RequestAborted);
                     if (profile == null)
                     {
                         ViewBag.ErrorMessage = "Could not fetch your profile details, please try to login again";
@@ -82,7 +84,7 @@ namespace VstsDemoBuilder.Controllers
                         Session["User"] = profile.displayName;
                         Session["Email"] = profile.emailAddress.ToLower();
                     }
-                    AccountsResponse.AccountList accountList = accountService.GetAccounts(profile.id, accessDetails);
+                    AccountsResponse.AccountList accountList = await accountService.GetAccountsAsync(profile.id, accessDetails, HttpContext.RequestAborted);
                     model.accessToken = accessDetails.access_token;
                     model.accountsForDropdown = new List<string>();
                     model.profileImage = "data:image/png;base64, " + profile.coreAttributes?.Avatar?.value?.value;
@@ -123,8 +125,17 @@ namespace VstsDemoBuilder.Controllers
             if (response.IsSuccessStatusCode)
             {
                 // set the viewmodel from the content in the response
-                projectResult = response.Content.ReadAsAsync<ProjectsResponse.ProjectResult>().Result;
-                projectResult.value = projectResult.value.OrderBy(x => x.name).ToList();
+                using (var stream = response.Content.ReadAsStream())
+                using (var reader = new StreamReader(stream))
+                {
+                    var responseBody = reader.ReadToEnd();
+                    projectResult = Newtonsoft.Json.JsonConvert.DeserializeObject<ProjectsResponse.ProjectResult>(responseBody);
+                }
+
+                if (projectResult?.value != null)
+                {
+                    projectResult.value = projectResult.value.OrderBy(x => x.name).ToList();
+                }
             }
             try
             {
@@ -469,4 +480,3 @@ namespace VstsDemoBuilder.Controllers
         }
     }
 }
-

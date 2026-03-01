@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Threading;
 using System.Threading.Tasks;
 using VstsDemoBuilder.Extensions;
 using VstsDemoBuilder.Infrastructure;
@@ -149,7 +150,7 @@ namespace VstsDemoBuilder.Controllers
         /// <returns></returns>
         [HttpGet]
         [AllowAnonymous]
-        public ActionResult CreateProject()
+        public async Task<ActionResult> CreateProject()
         {
             try
             {
@@ -181,7 +182,7 @@ namespace VstsDemoBuilder.Controllers
                     if (Session["PAT"] != null)
                     {
                         _accessDetails.access_token = Session["PAT"].ToString();
-                        ProfileDetails profile = accountService.GetProfile(_accessDetails);
+                        ProfileDetails profile = await accountService.GetProfileAsync(_accessDetails, HttpContext.RequestAborted);
                         if (profile.displayName != null || profile.emailAddress != null)
                         {
                             Session["User"] = profile.displayName ?? string.Empty;
@@ -189,7 +190,7 @@ namespace VstsDemoBuilder.Controllers
                         }
                         if (profile.id != null)
                         {
-                            AccountsResponse.AccountList accountList = accountService.GetAccounts(profile.id, _accessDetails);
+                            AccountsResponse.AccountList accountList = await accountService.GetAccountsAsync(profile.id, _accessDetails, HttpContext.RequestAborted);
 
                             //New Feature Enabling
                             model.accessToken = Session["PAT"].ToString();
@@ -306,7 +307,7 @@ namespace VstsDemoBuilder.Controllers
         /// <returns>View()</returns>
         [HttpGet]
         [AllowAnonymous]
-        public ActionResult Create(Project model)
+        public async Task<ActionResult> Create(Project model)
         {
             try
             {
@@ -353,7 +354,7 @@ namespace VstsDemoBuilder.Controllers
                 }
 
                 string accessRequestBody = accountService.GenerateRequestPostData(clientSecret, code, redirectUrl);
-                AccessDetails accessDetails = accountService.GetAccessToken(accessRequestBody);
+                AccessDetails accessDetails = await accountService.GetAccessTokenAsync(accessRequestBody, HttpContext.RequestAborted);
                 if (!string.IsNullOrEmpty(accessDetails.access_token))
                 {
                     // add your access token here for local debugging
