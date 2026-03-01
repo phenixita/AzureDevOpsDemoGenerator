@@ -4,13 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/net10-linux-appservice-workshop
+      - master
     paths:
-      - ".github/workflows/build-deploy-linux-net10.yml"
       - "infra/**"
       - "src/**"
-      - "README.md"
-      - "docs/**"
+
 
 permissions:
   contents: read
