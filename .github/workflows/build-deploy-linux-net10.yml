@@ -21,7 +21,6 @@ env:
   ARTIFACT_NAME: "webapp-package"
   AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
   AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
-  AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
 
 jobs:
   build:
@@ -117,17 +116,21 @@ jobs:
           PY
 
       - name: Deploy Bicep infrastructure
+        id: infra
         uses: azure/cli@v2
         with:
           inlineScript: |
             az group create --name "$AZURE_RESOURCE_GROUP" --location "$AZURE_LOCATION"
             EXTRA_APP_SETTINGS='${{ steps.appsettings.outputs.json }}'
-            az deployment group create \
+            WEBAPP_NAME=$(az deployment group create \
               --resource-group "$AZURE_RESOURCE_GROUP" \
               --template-file infra/main.bicep \
               --parameters @infra/parameters/production.parameters.json \
               --parameters location="$AZURE_LOCATION" \
-                           extraAppSettings="$EXTRA_APP_SETTINGS"
+                           extraAppSettings="$EXTRA_APP_SETTINGS" \
+              --query properties.outputs.webAppName.value \
+              --output tsv)
+            echo "webapp_name=$WEBAPP_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Download package artifact
         uses: actions/download-artifact@v4
@@ -141,12 +144,12 @@ jobs:
           inlineScript: |
             az webapp deploy \
               --resource-group "$AZURE_RESOURCE_GROUP" \
-              --name "$AZURE_WEBAPP_NAME" \
+              --name "${{ steps.infra.outputs.webapp_name }}" \
               --src-path webapp.zip \
               --type zip
-            az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME"
+            az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infra.outputs.webapp_name }}"
 
       - name: Smoke test
         run: |
           sleep 15
-          curl --fail --silent --show-error "https://${AZURE_WEBAPP_NAME}.azurewebsites.net/" > /dev/null
+          curl --fail --silent --show-error "https://${{ steps.infra.outputs.webapp_name }}.azurewebsites.net/" > /dev/null
