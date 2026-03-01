@@ -156,6 +156,16 @@ namespace VstsDemoBuilder.Services
             else
             {
                 filePath = Path.Combine(AppPath.MapPath("~/Templates"), TemplateName, normalizedFileName);
+                // Embedded resources replace hyphens with underscores in folder names;
+                // fall back to the underscore variant when the original path does not exist.
+                if (!File.Exists(filePath) && TemplateName.Contains('-'))
+                {
+                    var altPath = Path.Combine(AppPath.MapPath("~/Templates"), TemplateName.Replace('-', '_'), normalizedFileName);
+                    if (File.Exists(altPath))
+                    {
+                        filePath = altPath;
+                    }
+                }
             }
             return filePath;
         }
@@ -758,7 +768,7 @@ namespace VstsDemoBuilder.Services
                 //GetAccount Members
                 VstsRestAPI.ProjectsAndTeams.Accounts objAccount = new VstsRestAPI.ProjectsAndTeams.Accounts(_projectCreationVersion);
                 //accountMembers = objAccount.GetAccountMembers(accountName, AccessToken);
-                foreach (var member in accountMembers.value)
+                foreach (var member in accountMembers.value ?? (IList<AccountMembers.Value>)new List<AccountMembers.Value>())
                 {
                     model.accountUsersForWi.Add(member.member.mailAddress);
                 }
@@ -1044,7 +1054,7 @@ namespace VstsDemoBuilder.Services
             catch (Exception ex)
             {
                 logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t CreateProjectEnvironment fatal\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
-                AddMessage(model.id.ErrorId(), "Unexpected provisioning error: " + ex.Message);
+                AddMessage(model.id.ErrorId(), "Unexpected provisioning error: " + ex.Message + "\n" + ex.StackTrace);
                 StatusMessages[model.id] = "100";
                 return new string[] { model.id, accountName, templateUsed };
             }

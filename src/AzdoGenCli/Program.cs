@@ -180,6 +180,30 @@ class Program
                 var result = cliProjectService.CreateProjectEnvironment(cliInput, templatesRoot);
                 var projectId = result.Length > 0 ? result[0] : string.Empty;
                 var org = result.Length > 1 ? result[1] : cliInput.OrganizationName;
+                var modelId = result.Length > 3 ? result[3] : string.Empty;
+
+                // Check for errors in StatusMessages using model.id (internal tracking GUID)
+                var statusMessages = VstsDemoBuilder.Services.ProjectService.StatusMessages;
+                var errorKey = modelId + "_Errors";
+                if (statusMessages.ContainsKey(errorKey) && !string.IsNullOrWhiteSpace(statusMessages[errorKey]))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"✗ Project provisioning errors:");
+                    Console.WriteLine(statusMessages[errorKey]);
+                    Console.ResetColor();
+                    logger.LogError("Provisioning errors: {Errors}", statusMessages[errorKey]);
+                    return 1;
+                }
+
+                // Check for OAUTHACCESSDENIED
+                if (statusMessages.ContainsKey(modelId) && statusMessages[modelId] == "OAUTHACCESSDENIED")
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("✗ Access denied. The OAuth token does not have sufficient permissions to create projects.");
+                    Console.WriteLine("  Try using a PAT with full access: --pat <your-pat>");
+                    Console.ResetColor();
+                    return 1;
+                }
 
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine($"✓ Project created successfully: https://dev.azure.com/{org}/{cliInput.ProjectName}");

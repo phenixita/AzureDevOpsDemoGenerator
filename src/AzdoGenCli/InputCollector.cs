@@ -227,7 +227,7 @@ namespace AzdoGenCli
                     {
                         // Fetch profile and accounts for OAuth flow
                         logger.LogDebug("Fetching user profile and accounts");
-                        var baseAddress = configuration["LegacyAppSettings:DefaultHost"] ?? "https://app.vssps.visualstudio.com";
+                        var baseAddress = configuration["LegacyAppSettings:BaseAddress"] ?? "https://app.vssps.visualstudio.com/";
                         
                         var profile = OAuthTokenService.GetProfile(oauthToken!, baseAddress, logger);
                         if (profile != null && !string.IsNullOrEmpty(profile.id))
