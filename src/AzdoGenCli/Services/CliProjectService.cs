@@ -48,7 +48,7 @@ namespace AzdoGenCli.Services
                 ProjectName = input.ProjectName,
                 accountName = input.OrganizationName,
                 accessToken = input.AccessToken,
-                SelectedTemplate = input.SelectedTemplate,
+                SelectedTemplate = input.TemplateInfo?.TemplateFolder ?? input.SelectedTemplate,
                 selectedTemplateFolder = input.TemplateInfo?.TemplateFolder,
                 IsPrivatePath = false,
                 PrivateTemplatePath = string.Empty,
@@ -75,6 +75,12 @@ namespace AzdoGenCli.Services
             var service = new ProjectService();
             var result = service.CreateProjectEnvironment(model);
 
+            // Log any status messages from the provisioning engine
+            foreach (var kvp in ProjectService.StatusMessages)
+            {
+                _logger.LogInformation("StatusMessage[{Key}] = {Value}", kvp.Key, kvp.Value);
+            }
+
             var projectId = model.Environment?.ProjectId ?? string.Empty;
             var org = input.OrganizationName;
             var template = input.TemplateInfo?.TemplateFolder ?? input.SelectedTemplate;
@@ -84,7 +90,7 @@ namespace AzdoGenCli.Services
                 org,
                 template);
 
-            return new[] { projectId, org, template };
+            return new[] { projectId, org, template, model.id };
         }
     }
 }

@@ -1,7 +1,9 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Web;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,31 +19,50 @@ namespace AzdoGenCli.Auth
     /// </summary>
     public static class BrowserAuthenticator
     {
+        private const string NativeClientRedirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
+
         /// <summary>
         /// Authenticate user via OAuth 2.0 browser flow
         /// Returns AccessDetails with token on success, or throws on failure
         /// </summary>
         public static async Task<AccessDetails> AuthenticateAsync(IConfiguration config, ILogger logger)
         {
-            // Find free port in range 5001-5099
-            int port = FindFreePort(5001, 5099);
-            if (port == -1)
-            {
-                throw new InvalidOperationException("No free port available in range 5001-5099 for OAuth callback");
-            }
-
-            string callbackUrl = $"http://localhost:{port}/callback";
-            logger.LogDebug("Using OAuth callback URL: {CallbackUrl}", callbackUrl);
-
             // Read OAuth configuration
             string tenantId = config["LegacyAppSettings:TenantId"] ?? "common";
             string? clientId = config["LegacyAppSettings:ClientId"];
-            string? clientSecret = config["LegacyAppSettings:ClientSecret"];
             string? appScope = config["LegacyAppSettings:appScope"];
+            string? configuredRedirectUri = config["LegacyAppSettings:RedirectUri"]?.Trim();
+            
+            logger.LogDebug("Using public client (non-confidential) OAuth flow - no client secret");
 
-            if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(appScope))
+            if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(appScope))
             {
-                throw new InvalidOperationException("ClientId, ClientSecret, and appScope must be configured in appsettings.json");
+                throw new InvalidOperationException("ClientId and appScope must be configured in appsettings.json");
+            }
+
+            bool hasConfiguredRedirectUri = !string.IsNullOrWhiteSpace(configuredRedirectUri);
+            bool isNativeClientMode = IsNativeClientRedirectUri(configuredRedirectUri);
+
+            string callbackUrl;
+            string listenerPrefix;
+
+            if (hasConfiguredRedirectUri)
+            {
+                callbackUrl = configuredRedirectUri!;
+                listenerPrefix = string.Empty;
+                logger.LogDebug("Using configured OAuth redirect URI: {RedirectUri}", callbackUrl);
+            }
+            else
+            {
+                int port = FindFreePort(5001, 5099);
+                if (port == -1)
+                {
+                    throw new InvalidOperationException("No free port available in range 5001-5099 for OAuth callback");
+                }
+
+                callbackUrl = $"http://localhost:{port}";
+                listenerPrefix = $"http://localhost:{port}/";
+                logger.LogDebug("Using generated OAuth callback URL: {CallbackUrl}", callbackUrl);
             }
 
             // Build OAuth authorize URL
@@ -52,11 +73,32 @@ namespace AzdoGenCli.Auth
                                   $"scope={WebUtility.UrlEncode(appScope)}&" +
                                   $"response_mode=query";
 
+            if (isNativeClientMode)
+            {
+                return ExchangeTokenFromManualRedirectInput(
+                    authorizeUrl,
+                    callbackUrl,
+                    clientId,
+                    appScope,
+                    tenantId,
+                    logger);
+            }
+
+            if (hasConfiguredRedirectUri)
+            {
+                if (!TryGetHttpListenerPrefix(callbackUrl, out listenerPrefix))
+                {
+                    throw new InvalidOperationException(
+                        $"Configured RedirectUri '{callbackUrl}' is not supported for automatic callback capture. " +
+                        $"Use '{NativeClientRedirectUri}' for manual copy/paste mode, or leave RedirectUri empty for localhost listener mode.");
+                }
+            }
+
             // Start HTTP listener
             HttpListener listener = new HttpListener();
-            listener.Prefixes.Add($"http://localhost:{port}/");
+            listener.Prefixes.Add(listenerPrefix);
             listener.Start();
-            logger.LogDebug("HTTP listener started on port {Port}", port);
+            logger.LogDebug("HTTP listener started with prefix {ListenerPrefix}", listenerPrefix);
 
             try
             {
@@ -100,7 +142,7 @@ namespace AzdoGenCli.Auth
 
                 // Exchange authorization code for access token
                 string tokenRequestBody = OAuthTokenService.GenerateRequestPostData(
-                    clientId, clientSecret, code, callbackUrl, appScope);
+                    clientId, code, callbackUrl, appScope);
                 
                 AccessDetails tokenDetails = OAuthTokenService.GetAccessToken(tokenRequestBody, tenantId, logger);
 
@@ -127,6 +169,154 @@ namespace AzdoGenCli.Auth
                 listener.Close();
                 logger.LogDebug("HTTP listener stopped");
             }
+        }
+
+        private static AccessDetails ExchangeTokenFromManualRedirectInput(
+            string authorizeUrl,
+            string callbackUrl,
+            string clientId,
+            string appScope,
+            string tenantId,
+            ILogger logger)
+        {
+            Console.WriteLine();
+            Console.WriteLine("╔══════════════════════════════════════════════════════════════════════════════╗");
+            Console.WriteLine("║  Azure DevOps Authentication Required                                       ║");
+            Console.WriteLine("╚══════════════════════════════════════════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine("Open your browser and navigate to:");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine(authorizeUrl);
+            Console.ResetColor();
+            Console.WriteLine();
+            Console.WriteLine("After sign-in, copy the full redirected URL from the browser address bar and paste it below:");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("Redirected URL: ");
+            Console.ResetColor();
+
+            string redirectedUrl = SanitizeRedirectedUrlInput(Console.ReadLine());
+
+            if (!Uri.TryCreate(redirectedUrl, UriKind.Absolute, out Uri? redirectedUri))
+            {
+                throw new InvalidOperationException("The provided redirected URL is not a valid absolute URL.");
+            }
+
+            Dictionary<string, string> queryValues = ParseQueryValues(redirectedUri.Query);
+
+            queryValues.TryGetValue("error", out string? error);
+            queryValues.TryGetValue("error_description", out string? errorDescription);
+
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                string message = string.IsNullOrWhiteSpace(errorDescription) ? error : errorDescription;
+                throw new InvalidOperationException($"OAuth error: {message}");
+            }
+
+            queryValues.TryGetValue("code", out string? code);
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                throw new InvalidOperationException("No authorization code found in redirected URL query string.");
+            }
+
+            logger.LogDebug("Authorization code received from manual redirected URL, exchanging for token...");
+
+            string tokenRequestBody = OAuthTokenService.GenerateRequestPostData(
+                clientId,
+                code,
+                callbackUrl,
+                appScope);
+
+            AccessDetails tokenDetails = OAuthTokenService.GetAccessToken(tokenRequestBody, tenantId, logger);
+            if (!string.IsNullOrEmpty(tokenDetails.error))
+            {
+                throw new InvalidOperationException($"Token exchange failed: {tokenDetails.error_description}");
+            }
+
+            logger.LogInformation("OAuth authentication completed successfully using manual redirect URI mode");
+            return tokenDetails;
+        }
+
+        private static string SanitizeRedirectedUrlInput(string? redirectedUrl)
+        {
+            if (string.IsNullOrWhiteSpace(redirectedUrl))
+            {
+                throw new InvalidOperationException("No redirected URL was provided.");
+            }
+
+            string trimmedRedirectedUrl = redirectedUrl.Trim();
+            foreach (char character in trimmedRedirectedUrl)
+            {
+                if (char.IsControl(character))
+                {
+                    throw new InvalidOperationException(
+                        "The provided redirected URL contains invalid control characters. Paste the full URL from the browser address bar.");
+                }
+            }
+
+            return trimmedRedirectedUrl;
+        }
+
+        private static Dictionary<string, string> ParseQueryValues(string query)
+        {
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return values;
+            }
+
+            NameValueCollection parsedQuery = HttpUtility.ParseQueryString(query);
+            foreach (string? key in parsedQuery.AllKeys)
+            {
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    values[key] = parsedQuery[key] ?? string.Empty;
+                }
+            }
+
+            return values;
+        }
+
+        private static bool IsNativeClientRedirectUri(string? redirectUri)
+        {
+            if (string.IsNullOrWhiteSpace(redirectUri))
+            {
+                return false;
+            }
+
+            return string.Equals(
+                NormalizeUriForComparison(redirectUri),
+                NormalizeUriForComparison(NativeClientRedirectUri),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool TryGetHttpListenerPrefix(string callbackUrl, out string listenerPrefix)
+        {
+            listenerPrefix = string.Empty;
+            if (!Uri.TryCreate(callbackUrl, UriKind.Absolute, out Uri? callbackUri))
+            {
+                return false;
+            }
+
+            if (!string.Equals(callbackUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!callbackUri.IsLoopback)
+            {
+                return false;
+            }
+
+            listenerPrefix = $"{callbackUri.Scheme}://{callbackUri.Host}:{callbackUri.Port}/";
+            return true;
+        }
+
+        private static string NormalizeUriForComparison(string uri)
+        {
+            return uri.Trim().TrimEnd('/');
         }
 
         /// <summary>

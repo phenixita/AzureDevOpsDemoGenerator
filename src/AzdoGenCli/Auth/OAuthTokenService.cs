@@ -17,14 +17,13 @@ namespace AzdoGenCli.Auth
     public static class OAuthTokenService
     {
         /// <summary>
-        /// Build token request body for Entra OAuth 2.0 authorization code exchange
+        /// Build token request body for Entra OAuth 2.0 authorization code exchange (public client)
         /// </summary>
-        public static string GenerateRequestPostData(string clientId, string appSecret, string authCode, string callbackUrl, string appScope)
+        public static string GenerateRequestPostData(string clientId, string authCode, string callbackUrl, string appScope)
         {
             return string.Format(
-                "client_id={0}&client_secret={1}&code={2}&redirect_uri={3}&grant_type=authorization_code&scope={4}",
+                "client_id={0}&code={1}&redirect_uri={2}&grant_type=authorization_code&scope={3}",
                 WebUtility.UrlEncode(clientId),
-                WebUtility.UrlEncode(appSecret),
                 WebUtility.UrlEncode(authCode),
                 WebUtility.UrlEncode(callbackUrl),
                 WebUtility.UrlEncode(appScope)
@@ -136,18 +135,17 @@ namespace AzdoGenCli.Auth
         }
 
         /// <summary>
-        /// Refresh access token via Entra token endpoint
+        /// Refresh access token via Entra token endpoint (public client)
         /// </summary>
-        public static AccessDetails Refresh_AccessToken(string refreshToken, string tenantId, string redirectUri, string clientId, string clientSecret, string appScope, ILogger? logger = null)
+        public static AccessDetails Refresh_AccessToken(string refreshToken, string tenantId, string redirectUri, string clientId, string appScope, ILogger? logger = null)
         {
             using (var client = new HttpClient())
             {
                 string tokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
                 var request = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
                 var requestContent = string.Format(
-                    "client_id={0}&client_secret={1}&grant_type=refresh_token&refresh_token={2}&redirect_uri={3}&scope={4}",
+                    "client_id={0}&grant_type=refresh_token&refresh_token={1}&redirect_uri={2}&scope={3}",
                     WebUtility.UrlEncode(clientId),
-                    WebUtility.UrlEncode(clientSecret),
                     WebUtility.UrlEncode(refreshToken),
                     WebUtility.UrlEncode(redirectUri),
                     WebUtility.UrlEncode(appScope)

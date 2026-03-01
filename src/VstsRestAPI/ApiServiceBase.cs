@@ -23,7 +23,8 @@ namespace VstsRestAPI
         public ApiServiceBase(IConfiguration configuration)
         {
             _configuration = configuration;
-            _credentials = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _configuration.PersonalAccessToken)));//configuration.PersonalAccessToken;
+            _credentials = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(string.Format("{0}:{1}", "", _configuration.PersonalAccessToken)));
+            _isBearer = _configuration.PersonalAccessToken != null && _configuration.PersonalAccessToken.StartsWith("eyJ");
             Project = configuration.Project;
             Account = configuration.AccountName;
             Team = configuration.Team;
@@ -36,6 +37,8 @@ namespace VstsRestAPI
             userName = configuration.userName;
         }
 
+        protected readonly bool _isBearer;
+
         protected HttpClient GetHttpClient()
         {
             var client = new HttpClient
@@ -44,7 +47,14 @@ namespace VstsRestAPI
             };
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", _credentials);
+            if (_isBearer)
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _configuration.PersonalAccessToken);
+            }
+            else
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", _credentials);
+            }
 
             return client;
         }
