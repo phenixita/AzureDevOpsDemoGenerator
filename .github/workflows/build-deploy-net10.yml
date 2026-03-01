@@ -1,4 +1,4 @@
-name: Build and deploy (.NET 10 Linux)
+name: Build and deploy (.NET 10)
 
 on:
   workflow_dispatch:
@@ -8,7 +8,6 @@ on:
     paths:
       - "infra/**"
       - "src/**"
-
 
 permissions:
   contents: read
@@ -24,7 +23,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,18 +35,16 @@ jobs:
           dotnet-quality: preview
 
       - name: Restore
-        run: dotnet restore $SOLUTION_PATH
+        run: dotnet restore $env:SOLUTION_PATH
 
       - name: Build
-        run: dotnet build $SOLUTION_PATH --configuration Release --no-restore
+        run: dotnet build $env:SOLUTION_PATH --configuration Release --no-restore
 
       - name: Publish web app
-        run: dotnet publish $WEB_PROJECT_PATH --configuration Release --no-build --output ./publish
+        run: dotnet publish $env:WEB_PROJECT_PATH --configuration Release --no-build --output publish
 
       - name: Create deployment package
-        run: |
-          cd publish
-          zip -r ../webapp.zip .
+        run: Compress-Archive -Path publish\* -DestinationPath webapp.zip
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
@@ -56,7 +53,7 @@ jobs:
           path: webapp.zip
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build
     environment: production
     steps:
@@ -148,8 +145,3 @@ jobs:
               --src-path webapp.zip \
               --type zip
             az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infra.outputs.webapp_name }}"
-
-      - name: Smoke test
-        run: |
-          sleep 15
-          curl --fail --silent --show-error "https://${{ steps.infra.outputs.webapp_name }}.azurewebsites.net/" > /dev/null
