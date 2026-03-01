@@ -18,6 +18,18 @@
     <Compile Remove="App_Start\**\*.cs;Global.asax.cs;ErrorHandler\AiHandleErrorAttribute.cs" />
   </ItemGroup>
 
+  <!-- Keep legacy config files in source, but never publish them on ASP.NET Core -->
+  <ItemGroup>
+    <Content Update="Web.config;Web.Debug.config;Web.Release.config;Views\Web.config">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <None Update="Web.config;Web.Debug.config;Web.Release.config;Views\Web.config">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
   <!-- Legacy ASP.NET MVC static assets – publish alongside app (not under wwwroot) -->
   <ItemGroup>
     <Content Include="Content\**" CopyToPublishDirectory="PreserveNewest" />

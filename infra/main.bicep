@@ -18,8 +18,8 @@ param applicationInsightsName string
 ])
 param appServicePlanSku string = 'B1'
 
-@description('Windows runtime stack for App Service.')
-param netFrameworkVersion string = 'v10.0'
+@description('Windows managed pipeline version for the IIS worker process hosting ASP.NET Core.')
+param netFrameworkVersion string = 'v4.0'
 
 @description('Additional app settings (for example LegacyAppSettings__ClientId).')
 param extraAppSettings object = {}
