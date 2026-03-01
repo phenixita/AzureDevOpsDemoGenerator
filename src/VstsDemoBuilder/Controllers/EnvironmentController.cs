@@ -586,6 +586,8 @@ namespace VstsDemoBuilder.Controllers
                         catch (Exception bgEx)
                         {
                             ProjectService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t Background: " + bgEx.Message + "\n" + bgEx.StackTrace + "\n");
+                            projectService.AddMessage(model.id.ErrorId(), "Unhandled provisioning error: " + bgEx.Message);
+                            projectService.AddMessage(model.id, "100");
                         }
                     });
                 }

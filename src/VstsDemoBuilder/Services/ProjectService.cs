@@ -180,8 +180,10 @@ namespace VstsDemoBuilder.Services
             //{
             templateUsed = model.SelectedTemplate;
             //}
-            logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + "Project Name: " + model.ProjectName + "\t Template Selected: " + templateUsed + "\t Organization Selected: " + accountName);
-            string pat = model.accessToken;
+            try
+            {
+                logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t" + "Project Name: " + model.ProjectName + "\t Template Selected: " + templateUsed + "\t Organization Selected: " + accountName);
+                string pat = model.accessToken;
             //define versions to be use
             string projectCreationVersion = System.Configuration.ConfigurationManager.AppSettings["ProjectCreationVersion"];
             string repoVersion = System.Configuration.ConfigurationManager.AppSettings["RepoVersion"];
@@ -417,16 +419,16 @@ namespace VstsDemoBuilder.Services
             }
 
             //current user Details
-            string teamName = model.ProjectName + " team";
+            string teamName = model.ProjectName + " Team";
             TeamMemberResponse.TeamMembers teamMembers = GetTeamMembers(model.ProjectName, teamName, _projectCreationVersion, model.id);
 
-            var teamMember = teamMembers.value != null ? teamMembers.value.FirstOrDefault() : new TeamMemberResponse.Value();
+            var teamMember = teamMembers?.value?.FirstOrDefault();
 
-            if (teamMember != null)
+            if (teamMember?.identity != null)
             {
                 model.Environment.UserUniquename = model.Environment.UserUniquename ?? teamMember.identity.uniqueName;
             }
-            if (teamMember != null)
+            if (teamMember?.identity != null)
             {
                 model.Environment.UserUniqueId = model.Environment.UserUniqueId ?? teamMember.identity.id;
             }
@@ -1038,6 +1040,14 @@ namespace VstsDemoBuilder.Services
             }
             StatusMessages[model.id] = "100";
             return new string[] { model.id, accountName, templateUsed };
+            }
+            catch (Exception ex)
+            {
+                logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t CreateProjectEnvironment fatal\t" + ex.Message + "\t" + "\n" + ex.StackTrace + "\n");
+                AddMessage(model.id.ErrorId(), "Unexpected provisioning error: " + ex.Message);
+                StatusMessages[model.id] = "100";
+                return new string[] { model.id, accountName, templateUsed };
+            }
         }
 
         private bool CreateBranchPolicy(Project model, Configuration buildConfig)
