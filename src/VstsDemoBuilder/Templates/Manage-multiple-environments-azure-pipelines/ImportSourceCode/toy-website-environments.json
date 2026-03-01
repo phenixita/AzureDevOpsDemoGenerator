@@ -1,9 +1,0 @@
-{
-  "parameters": {
-    "gitSource": {
-      "url": "https://github.com/MicrosoftDocs/mslearn-manage-multiple-environments-using-bicep-azure-pipelines.git"
-    },
-    "serviceEndpointId": "",
-    "deleteServiceEndpointAfterImportIsDone": false
-  }
-}
