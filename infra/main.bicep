@@ -66,6 +66,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: linuxFxVersion
+      appCommandLine: 'dotnet VstsDemoBuilder.dll'
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
     }
