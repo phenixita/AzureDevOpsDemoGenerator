@@ -35,6 +35,14 @@ class Program
                 return 0;
             }
 
+            // Handle --logout flag
+            if (cliArgs.ClearCache)
+            {
+                TokenCache.ClearToken();
+                Console.WriteLine("✓ Cached authentication cleared");
+                return 0;
+            }
+
             // Load configuration from appsettings.json and environment variables
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
@@ -79,50 +87,90 @@ class Program
             }
             else
             {
-                // Use OAuth browser authentication
-                logger.LogInformation("Starting OAuth browser authentication flow");
-                Console.WriteLine("Starting OAuth authentication...");
-                Console.WriteLine();
+                // Check token cache first
+                oauthToken = TokenCache.GetToken(logger);
+
+                if (oauthToken != null && !string.IsNullOrEmpty(oauthToken.access_token))
+                {
+                    logger.LogInformation("Using cached OAuth token");
+                    accessToken = oauthToken.access_token;
+                    Console.WriteLine("✓ Using cached authentication");
+                }
                 
-                oauthToken = await BrowserAuthenticator.AuthenticateAsync(configuration, logger);
-                accessToken = oauthToken.access_token;
-                
-                Console.WriteLine();
-                Console.WriteLine("✓ Authentication successful!");
-                logger.LogInformation("OAuth authentication completed successfully");
+                // If no token or if we want to be sure, we could validate it here
+                // For now, we'll try to use it and if it fails in InputCollector, we'll catch it.
             }
 
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("✗ Authentication failed: No access token obtained");
-                Console.ResetColor();
-                logger.LogError("Authentication failed: No access token obtained");
-                return 1;
-            }
-
-            logger.LogDebug("Access token obtained (length: {TokenLength})", accessToken.Length);
-            
             // Phase 4: Input Collection & Template Discovery
             logger.LogInformation("Starting input collection phase");
             
-            CliInput cliInput;
-            try
+            CliInput cliInput = null;
+            bool authenticated = false;
+            int authRetries = 0;
+
+            while (!authenticated && authRetries < 2)
             {
-                cliInput = InputCollector.CollectInput(
-                    cliArgs, 
-                    oauthToken, 
-                    accessToken, 
-                    configuration, 
-                    logger);
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"✗ Input collection failed: {ex.Message}");
-                Console.ResetColor();
-                logger.LogError(ex, "Input collection failed");
-                return 1;
+                if (string.IsNullOrEmpty(accessToken) && string.IsNullOrEmpty(cliArgs.Pat))
+                {
+                    // Use OAuth browser authentication
+                    logger.LogInformation("Starting OAuth browser authentication flow");
+                    Console.WriteLine("Starting OAuth authentication...");
+                    Console.WriteLine();
+
+                    oauthToken = await BrowserAuthenticator.AuthenticateAsync(configuration, logger);
+                    accessToken = oauthToken.access_token;
+
+                    // Save to cache
+                    TokenCache.SaveToken(oauthToken, logger);
+
+                    Console.WriteLine();
+                    Console.WriteLine("✓ Authentication successful!");
+                    logger.LogInformation("OAuth authentication completed successfully");
+                }
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("✗ Authentication failed: No access token obtained");
+                    Console.ResetColor();
+                    logger.LogError("Authentication failed: No access token obtained");
+                    return 1;
+                }
+
+                try
+                {
+                    cliInput = InputCollector.CollectInput(
+                        cliArgs, 
+                        oauthToken, 
+                        accessToken, 
+                        configuration, 
+                        logger);
+                    authenticated = true;
+                }
+                catch (Exception ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("401"))
+                {
+                    logger.LogWarning("Authentication failed with 401 Unauthorized. Clearing cache and retrying...");
+                    TokenCache.ClearToken(logger);
+                    accessToken = null;
+                    oauthToken = null;
+                    authRetries++;
+                    
+                    if (authRetries >= 2)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("✗ Authentication failed multiple times. Please check your account permissions.");
+                        Console.ResetColor();
+                        return 1;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"✗ Input collection failed: {ex.Message}");
+                    Console.ResetColor();
+                    logger.LogError(ex, "Input collection failed");
+                    return 1;
+                }
             }
 
             // Display summary

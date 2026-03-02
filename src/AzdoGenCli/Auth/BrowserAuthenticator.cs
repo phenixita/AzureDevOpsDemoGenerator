@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Specialized;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Web;
 using System.Text;
 using System.Threading;
@@ -102,13 +104,13 @@ namespace AzdoGenCli.Auth
 
             try
             {
-                // Display URL to user (headless - no auto-launch)
+                // Display URL to user
                 Console.WriteLine();
                 Console.WriteLine("╔══════════════════════════════════════════════════════════════════════════════╗");
                 Console.WriteLine("║  Azure DevOps Authentication Required                                       ║");
                 Console.WriteLine("╚══════════════════════════════════════════════════════════════════════════════╝");
                 Console.WriteLine();
-                Console.WriteLine("Open your browser and navigate to:");
+                Console.WriteLine("Opening your default browser for authentication...");
                 Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.WriteLine(authorizeUrl);
@@ -116,6 +118,9 @@ namespace AzdoGenCli.Auth
                 Console.WriteLine();
                 Console.WriteLine("Waiting for authentication to complete...");
                 Console.WriteLine();
+
+                // Auto-open browser
+                OpenBrowser(authorizeUrl);
 
                 // Wait for callback with 2-minute timeout
                 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
@@ -168,6 +173,30 @@ namespace AzdoGenCli.Auth
                 listener.Stop();
                 listener.Close();
                 logger.LogDebug("HTTP listener stopped");
+            }
+        }
+
+        private static void OpenBrowser(string url)
+        {
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Process.Start("xdg-open", url);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    Process.Start("open", url);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fallback to manual if browser open fails
+                Debug.WriteLine($"Failed to open browser: {ex.Message}");
             }
         }
 

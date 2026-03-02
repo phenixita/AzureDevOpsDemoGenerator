@@ -28,6 +28,16 @@ namespace AzdoGenCli
 
             if (accounts != null && accounts.Count > 0)
             {
+                if (accounts.Count == 1)
+                {
+                    var selected = accounts[0];
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"✓ Auto-selected organization: {selected.accountName}");
+                    Console.ResetColor();
+                    Console.WriteLine();
+                    return selected.accountName ?? string.Empty;
+                }
+
                 Console.WriteLine();
                 Console.WriteLine("Available organizations:");
                 Console.WriteLine();
@@ -48,8 +58,10 @@ namespace AzdoGenCli
                 // Prompt for selection
                 while (true)
                 {
-                    Console.Write($"Select organization (1-{accounts.Count}): ");
-                    var input = Console.ReadLine();
+                    Console.Write($"Select organization (1-{accounts.Count}, or type name): ");
+                    var input = Console.ReadLine()?.Trim();
+
+                    if (string.IsNullOrEmpty(input)) continue;
 
                     if (int.TryParse(input, out int selection) && selection >= 1 && selection <= accounts.Count)
                     {
@@ -58,8 +70,16 @@ namespace AzdoGenCli
                         return selected.accountName ?? string.Empty;
                     }
 
+                    // Try direct name match
+                    var matched = accounts.FirstOrDefault(a => string.Equals(a.accountName, input, StringComparison.OrdinalIgnoreCase));
+                    if (matched != null)
+                    {
+                        Console.WriteLine();
+                        return matched.accountName ?? string.Empty;
+                    }
+
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"✗ Invalid selection. Please enter a number between 1 and {accounts.Count}");
+                    Console.WriteLine($"✗ Invalid selection. Please enter a number between 1 and {accounts.Count} or a valid name.");
                     Console.ResetColor();
                 }
             }
@@ -94,23 +114,41 @@ namespace AzdoGenCli
         /// Rules: 1-64 characters, alphanumeric + dash/underscore, no spaces
         /// </summary>
         /// <returns>Valid project name</returns>
-        public static string PromptForProjectName()
+        public static string PromptForProjectName(string? defaultName = null)
         {
             Console.WriteLine();
             Console.WriteLine("Project Name:");
             Console.WriteLine("=============");
             Console.WriteLine();
-            Console.WriteLine("Enter a name for your new Azure DevOps project");
+            
+            if (!string.IsNullOrEmpty(defaultName))
+            {
+                Console.WriteLine($"Enter a name for your new project (Default: '{defaultName}')");
+            }
+            else
+            {
+                Console.WriteLine("Enter a name for your new Azure DevOps project");
+            }
+            
             Console.WriteLine("Rules: 1-64 characters, alphanumeric, dash (-), underscore (_), no spaces");
             Console.WriteLine();
 
             while (true)
             {
-                Console.Write("Project name: ");
+                Console.Write($"Project name {(defaultName != null ? "[" + defaultName + "]" : "")}: ");
                 var projectName = Console.ReadLine()?.Trim();
 
                 if (string.IsNullOrWhiteSpace(projectName))
                 {
+                    if (!string.IsNullOrEmpty(defaultName))
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"✓ Using default name: {defaultName}");
+                        Console.ResetColor();
+                        Console.WriteLine();
+                        return defaultName;
+                    }
+                    
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("✗ Project name cannot be empty");
                     Console.ResetColor();
@@ -242,17 +280,6 @@ namespace AzdoGenCli
                     input.OrganizationName = PromptForOrganization(accounts);
                 }
 
-                // Project name
-                if (!string.IsNullOrEmpty(args.Project))
-                {
-                    input.ProjectName = args.Project;
-                    logger.LogDebug("Using project from CLI: {Project}", args.Project);
-                }
-                else
-                {
-                    input.ProjectName = PromptForProjectName();
-                }
-
                 // Template selection
                 if (!string.IsNullOrEmpty(args.Template))
                 {
@@ -273,6 +300,28 @@ namespace AzdoGenCli
                     input.SelectedTemplate = template.ShortName ?? template.Name;
                     input.TemplateInfo = template;
                     logger.LogInformation("Selected template: {Template}", template.Name);
+                }
+
+                // Project name
+                if (!string.IsNullOrEmpty(args.Project))
+                {
+                    input.ProjectName = args.Project;
+                    logger.LogDebug("Using project from CLI: {Project}", args.Project);
+                }
+                else
+                {
+                    // Suggest project name based on template
+                    string? defaultProjectName = null;
+                    if (input.TemplateInfo != null)
+                    {
+                        defaultProjectName = input.TemplateInfo.ShortName ?? input.TemplateInfo.Name;
+                        // Clean up name for project (remove spaces, etc.)
+                        defaultProjectName = Regex.Replace(defaultProjectName, @"[^a-zA-Z0-9_-]", "");
+                        if (defaultProjectName.Length > 50) defaultProjectName = defaultProjectName.Substring(0, 50);
+                        defaultProjectName += "-" + Guid.NewGuid().ToString("N").Substring(0, 4);
+                    }
+                    
+                    input.ProjectName = PromptForProjectName(defaultProjectName);
                 }
             }
 
