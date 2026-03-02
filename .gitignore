@@ -156,7 +156,7 @@ UpgradeLog.htm
 # Local development secrets
 **/appsettings.Development.json
 publish_fix/ 
-crash-logs/
+crash-logs/ 
 .tmp*
 
 # Frontend / Node / Astro artifacts
@@ -177,4 +177,4 @@ site/.netlify/
 .env
 .env.*
 !.env.example
-.eslintcache
+.eslintcache 
