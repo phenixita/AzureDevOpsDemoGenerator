@@ -13,10 +13,10 @@ Azure DevOps Demo Generator provisions Azure DevOps projects with predefined rep
 ## Important Links
 
 - Project site: /
-- Repository: https://github.com/microsoft/AzureDevOpsDemoGenerator
+- Repository: https://github.com/phenixita/AzureDevOpsDemoGenerator
 - Hosted generator: https://azuredevopsdemogenerator.azurewebsites.net/
-- Documentation: https://github.com/microsoft/AzureDevOpsDemoGenerator/tree/main/docs
-- API reference: https://github.com/microsoft/AzureDevOpsDemoGenerator/blob/main/docs/Azure-DevOps-Demo-Generator-REST-API-Reference.md
+- Documentation: https://github.com/phenixita/AzureDevOpsDemoGenerator/tree/main/docs
+- API reference: https://github.com/phenixita/AzureDevOpsDemoGenerator/blob/main/docs/Azure-DevOps-Demo-Generator-REST-API-Reference.md
 
 ## Key Topics
 

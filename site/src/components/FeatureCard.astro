@@ -1,0 +1,48 @@
+---
+interface Props {
+	title: string;
+	description: string;
+	icon?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<div class="feature-card animate-in">
+	<div class="icon-wrapper">
+		<slot name="icon" />
+	</div>
+	<h3>{title}</h3>
+	<p>{description}</p>
+</div>
+
+<style>
+	.feature-card {
+		background: #fbfbfd;
+		padding: 40px;
+		border-radius: var(--border-radius);
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.feature-card:hover {
+		transform: scale(1.02);
+	}
+
+	.icon-wrapper {
+		color: rgb(var(--accent-rgb));
+		margin-bottom: 8px;
+	}
+
+	h3 {
+		font-size: 24px;
+		color: var(--text-primary);
+	}
+
+	p {
+		font-size: 17px;
+		line-height: 1.47;
+	}
+</style>

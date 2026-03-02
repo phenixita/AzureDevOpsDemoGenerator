@@ -1,0 +1,74 @@
+---
+const basePath = import.meta.env.BASE_URL;
+---
+
+<nav class="navbar">
+	<div class="nav-container">
+		<a href={`${basePath}`} class="nav-logo">
+			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+			</svg>
+			<span>AzDoGen</span>
+		</a>
+		<div class="nav-links">
+			<a href="#features">Features</a>
+			<a href="#how-it-works">How it works</a>
+			<a href="https://github.com/phenixita/AzureDevOpsDemoGenerator" target="_blank">GitHub</a>
+		 	</div>
+	</div>
+</nav>
+
+<style>
+	.navbar {
+		position: sticky;
+		top: 0;
+		background: rgba(255, 255, 255, 0.8);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		z-index: 1000;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+	}
+
+	.nav-container {
+		max-width: 1200px;
+		margin: 0 auto;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		height: 48px;
+		padding: 0 20px;
+	}
+
+	.nav-logo {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		text-decoration: none;
+		color: var(--text-primary);
+		font-weight: 600;
+		font-size: 19px;
+	}
+
+	.nav-links {
+		display: flex;
+		align-items: center;
+		gap: 24px;
+	}
+
+	.nav-links a {
+		text-decoration: none;
+		color: var(--text-primary);
+		font-size: 14px;
+		font-weight: 400;
+		transition: opacity 0.2s ease;
+	}
+
+	.nav-links a:hover {
+		opacity: 0.6;
+	}
+
+	.nav-btn {
+		font-size: 12px;
+		padding: 4px 12px;
+	}
+</style>

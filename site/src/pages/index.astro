@@ -1,225 +1,396 @@
 ---
-const pageTitle = 'Azure DevOps Demo Generator | Create Template-Populated Azure DevOps Projects';
-const pageDescription =
-	'Azure DevOps Demo Generator creates complete Azure DevOps projects from templates with repos, work items, iterations, pipelines, releases, dashboards, and service connections for demos, labs, and onboarding.';
-const keywords = [
-	'Azure DevOps Demo Generator',
-	'Azure DevOps project templates',
-	'Azure DevOps automation',
-	'Azure DevOps REST API samples',
-	'DevOps training labs',
-	'work items and pipelines bootstrap',
-];
-const repositoryUrl = 'https://github.com/microsoft/AzureDevOpsDemoGenerator';
-const docsUrl = `${repositoryUrl}/tree/main/docs`;
-const serviceUrl = 'https://azuredevopsdemogenerator.azurewebsites.net/';
-const basePath = import.meta.env.BASE_URL;
-const site = Astro.site ?? new URL('https://example.com');
-const canonicalUrl = new URL(Astro.url.pathname, site).toString();
-const socialImageUrl = new URL(`${basePath}social-card.png`, site).toString();
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import FeatureCard from '../components/FeatureCard.astro';
 
-const softwareSchema = {
-	'@context': 'https://schema.org',
-	'@type': 'SoftwareApplication',
-	name: 'Azure DevOps Demo Generator',
-	applicationCategory: 'DeveloperApplication',
-	operatingSystem: 'Web',
-	url: canonicalUrl,
-	codeRepository: repositoryUrl,
-	description: pageDescription,
-	offers: {
-		'@type': 'Offer',
-		price: '0',
-		priceCurrency: 'USD',
-	},
-	publisher: {
-		'@type': 'Organization',
-		name: 'Microsoft',
-	},
-};
-
-const websiteSchema = {
-	'@context': 'https://schema.org',
-	'@type': 'WebSite',
-	name: 'Azure DevOps Demo Generator',
-	url: canonicalUrl,
-	description: pageDescription,
-};
+const pageTitle = 'Azure DevOps Demo Generator | High-Speed Environment Provisioning';
+const pageDescription = 'Empower your teams with instant, production-ready Azure DevOps environments. Professional templates for labs, demos, and rapid onboarding.';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="generator" content={Astro.generator} />
-		<meta name="description" content={pageDescription} />
-		<meta name="keywords" content={keywords.join(', ')} />
-		<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-		<link rel="canonical" href={canonicalUrl} />
+<Layout title={pageTitle} description={pageDescription}>
+	<Navbar />
+	
+	<main>
+		<!-- Hero Section -->
+		<section class="hero text-center">
+			<div class="hero-content animate-in">
+				<p class="eyebrow">Meet the Future of DevOps Labs</p>
+				<h1>The ultimate engine for <br/> <span class="gradient-text">Azure DevOps lab data automation.</span></h1>
+				<p class="lead">CLI-first toolkit for generating Azure DevOps demo projects from curated templates. Self-contained, portable, and ready for automation.</p>
+				 <div class="hero-actions">
+					<a href="https://github.com/phenixita/AzureDevOpsDemoGenerator/releases" class="btn btn-primary">Download AzdoGenCli.exe</a>
+					<a href="#how-it-works" class="btn btn-secondary">Learn More</a>
+				 </div>
+			</div> 
+		</section>
 
-		<meta property="og:type" content="website" />
-		<meta property="og:site_name" content="Azure DevOps Demo Generator" />
-		<meta property="og:title" content={pageTitle} />
-		<meta property="og:description" content={pageDescription} />
-		<meta property="og:url" content={canonicalUrl} />
-		<meta property="og:image" content={socialImageUrl} />
-		<meta property="og:image:alt" content="Azure DevOps Demo Generator preview image" />
+		<!-- The Why Section -->
+		<section class="why-section bg-alt" id="features">
+			<div class="text-center section-header animate-in">
+				<h2>One tool. <br/> Infinite possibilities.</h2>
+				<p>Accelerate your workflow with curated templates and robust automation.</p>
+			</div>
+			<div class="features-grid">
+				<FeatureCard 
+					title="Self-Contained EXE" 
+					description="Distributed as a single file. No .NET runtime or SDK installation required on Windows. Just download and run.">
+					<svg slot="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M9 3v18M15 3v18M3 9h18M3 15h18"></path></svg>
+				</FeatureCard>
 
-		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:title" content={pageTitle} />
-		<meta name="twitter:description" content={pageDescription} />
-		<meta name="twitter:image" content={socialImageUrl} />
+				<FeatureCard 
+					title="Instant Scaffolding" 
+					description="Provision new Azure DevOps projects from a wide range of curated industry templates like eShopOnWeb or SmartHotel360.">
+					<svg slot="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+				</FeatureCard>
+				
+				<FeatureCard 
+					title="Smart Authentication" 
+					description="Seamless OAuth browser sign-in for interactive use, or PAT tokens for non-interactive automation and CI.">
+					<svg slot="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+				</FeatureCard>
+				
+				<FeatureCard 
+					title="Rich Content" 
+					description="Populate repos, boards, pipelines, and dashboards automatically, reflecting industry best practices.">
+					<svg slot="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+				</FeatureCard>
+			</div>
+		</section>
 
-		<link rel="icon" type="image/svg+xml" href={`${basePath}favicon.svg`} />
-		<link rel="icon" href={`${basePath}favicon.ico`} />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link
-			href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap"
-			rel="stylesheet"
-		/>
+		<!-- How it works Section -->
+		<section class="how-it-works" id="how-it-works">
+			<div class="section-header animate-in">
+				<h2>How it works.</h2>
+				<p>From zero to a full demo environment in seconds.</p>
+			</div>
+			<div class="steps-container">
+				<div class="step animate-in">
+					<div class="step-num">01</div>
+					<div class="step-content">
+						<h3>Download & Discover</h3>
+						<p>Get the latest <code>AzdoGenCli.exe</code> and list available templates using <code>--list-templates</code>.</p>
+					</div>
+				</div>
+				<div class="step animate-in">
+					<div class="step-num">02</div>
+					<div class="step-content">
+						<h3>Authenticate</h3>
+						<p>Login via browser (OAuth) automatically, or provide a Personal Access Token (PAT) for automation.</p>
+					</div>
+				</div>
+				<div class="step animate-in">
+					<div class="step-num">03</div>
+					<div class="step-content">
+						<h3>Provision</h3>
+						<p>Run the CLI with your organization, project name, and template. Watch it build your environment.</p>
+					</div>
+				</div>
+			</div>
+		</section>
 
-		<title>{pageTitle}</title>
+		<!-- CLI Section -->
+		<section class="cli-section text-center animate-in">
+			<div class="cli-content">
+				<h2>Terminal-First Experience</h2>
+				<p>The new AzDoGen CLI brings the power of the demo generator to your automation pipelines.</p>
+				<div class="terminal-mockup">
+					<div class="terminal-body">
+						<code>.\AzdoGenCli.exe --org myorg --project "Lab01" --template eShopOnWeb</code>
+						<code>[INFO] Authenticating via OAuth browser sign-in...</code>
+						<code>[INFO] Creating project: Lab01</code>
+						<code>[INFO] Applying template: eShopOnWeb</code>
+						<code>[INFO] [✓] Importing Repositories...</code>
+						<code>[INFO] [✓] Configuring Pipelines...</code>
+						<code>[INFO] Success! Project URL: https://dev.azure.com/myorg/Lab01</code>
+					</div>
+				</div>
+			</div>
+		</section>
 
-		<script type="application/ld+json" set:html={JSON.stringify(softwareSchema)}></script>
-		<script type="application/ld+json" set:html={JSON.stringify(websiteSchema)}></script>
-	</head>
-	<body>
-		<main>
-			<p class="eyebrow">Azure DevOps • Demo Automation • Template Provisioning</p>
-			<h1>Azure DevOps Demo Generator</h1>
-			<p class="lead">
-				Create complete Azure DevOps projects preloaded with source repositories, work items,
-				iterations, boards, pipelines, releases, test assets, and dashboards from reusable templates.
-			</p>
+		<!-- Auth Modes Section -->
+		<section class="auth-section bg-alt">
+			<div class="max-w-4xl mx-auto text-center animate-in">
+				<h2>Built for Humans and Bots</h2>
+				<p class="mb-12">Choose the authentication mode that fits your workflow.</p>
+				<div class="features-grid">
+					<div class="card p-6 text-left">
+						<h3 class="text-xl font-bold mb-4">OAuth (Default)</h3>
+						<p class="text-secondary">Best for quick interactive local usage. The CLI opens a browser for you to sign in securely.</p>
+					</div>
+					<div class="card p-6 text-left">
+						<h3 class="text-xl font-bold mb-4">PAT (Automation)</h3>
+						<p class="text-secondary">Best for CI/CD, scripts, and non-interactive runs. Pass it via <code>--pat</code> or <code>AZURE_DEVOPS_PAT</code> env var.</p>
+					</div>
+				</div>
+			</div>
+		</section>
 
-			<section>
-				<h2>What It Is For</h2>
-				<p>
-					This project accelerates demos, hands-on labs, and training by provisioning realistic Azure DevOps
-					environments in minutes. Teams also use it as a reference implementation for Azure DevOps REST API
-					automation and repeatable project bootstrapping.
-				</p>
-			</section>
+		<!-- CTA Section -->
+		<section class="cta-section text-center animate-in">
+			<h2>Ready to transform your labs?</h2>
+			<div class="mt-8">
+				<a href="https://github.com/phenixita/AzureDevOpsDemoGenerator" class="btn btn-primary">Star on GitHub</a>
+			</div>
+		</section>
+	</main>
 
-			<section>
-				<h2>Core Capabilities</h2>
-				<ul>
-					<li>Scaffold new Azure DevOps projects from curated templates.</li>
-					<li>Populate boards, queries, iterations, and work items automatically.</li>
-					<li>Import source code and configure CI/CD definitions.</li>
-					<li>Create service endpoints, dashboards, wikis, and test plans.</li>
-				</ul>
-			</section>
-
-			<section>
-				<h2>Useful Links</h2>
-				<ul>
-					<li><a href={serviceUrl}>Hosted Demo Generator Service</a></li>
-					<li><a href={repositoryUrl}>GitHub Repository</a></li>
-					<li><a href={docsUrl}>Documentation</a></li>
-				</ul>
-			</section>
-		</main>
-	</body>
-</html>
+	<footer class="footer">
+		<div class="footer-container">
+			<div class="footer-info">
+				<p>© {new Date().getFullYear()} Azure DevOps Demo Generator</p>
+				<p>A community project maintained on GitHub.</p>
+			</div>
+			<div class="footer-links">
+				<a href="https://github.com/phenixita/AzureDevOpsDemoGenerator">Source Code</a>
+				<a href="https://github.com/phenixita/AzureDevOpsDemoGenerator/blob/main/LICENSE">License</a>
+			</div>
+		</div>
+	</footer>
+</Layout>
 
 <style>
-	:root {
-		--bg: #f3f5eb;
-		--card: #fffefa;
-		--ink: #101317;
-		--muted: #475366;
-		--line: #d0d8c5;
-		--accent: #005c84;
-		--accent-soft: #d9edf6;
-	}
-
-	* {
-		box-sizing: border-box;
-	}
-
-	body {
-		margin: 0;
-		min-height: 100vh;
-		font-family: 'Source Serif 4', Georgia, serif;
-		color: var(--ink);
-		background:
-			radial-gradient(circle at 10% 0%, #dff6e8 0%, rgba(223, 246, 232, 0) 38%),
-			radial-gradient(circle at 90% 90%, #d9edf6 0%, rgba(217, 237, 246, 0) 34%),
-			var(--bg);
-	}
-
-	main {
-		width: min(920px, calc(100% - 2rem));
-		margin: 3rem auto;
-		padding: 2rem;
-		border: 1px solid var(--line);
-		border-radius: 16px;
-		background: linear-gradient(145deg, var(--card), #f7f8f3);
-		box-shadow: 0 18px 45px rgba(16, 19, 23, 0.08);
-	}
-
-	.eyebrow,
-	h1,
-	h2 {
-		font-family: 'Space Grotesk', system-ui, sans-serif;
+	.hero {
+		padding-top: 100px;
+		padding-bottom: 60px;
 	}
 
 	.eyebrow {
-		margin: 0;
-		color: var(--accent);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		font-size: 0.78rem;
-		font-weight: 700;
+		font-weight: 600;
+		color: var(--text-secondary);
+		margin-bottom: 12px;
+		font-size: 21px;
 	}
 
 	h1 {
-		margin: 0.5rem 0 1rem;
-		font-size: clamp(2rem, 3.5vw, 3rem);
-		line-height: 1.1;
+		font-size: clamp(40px, 8vw, 80px);
+		line-height: 1.05;
+		margin-bottom: 24px;
+		color: #1d1d1f;
 	}
 
-	h2 {
-		margin: 2rem 0 0.5rem;
-		font-size: clamp(1.2rem, 2vw, 1.55rem);
-	}
-
-	p,
-	li {
-		font-size: 1.08rem;
-		line-height: 1.65;
-		color: var(--muted);
+	.gradient-text {
+		background: linear-gradient(90deg, #0071e3, #00b4d8);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
 	}
 
 	.lead {
-		font-size: 1.2rem;
-		max-width: 68ch;
-		color: #20324a;
+		font-size: clamp(21px, 2vw, 24px);
+		max-width: 800px;
+		margin: 0 auto 40px;
 	}
 
-	ul {
-		padding-left: 1.2rem;
-		margin: 0.35rem 0 0;
+	.hero-actions {
+		display: flex;
+		gap: 20px;
+		justify-content: center;
+		margin-bottom: 60px;
 	}
 
-	a {
-		color: var(--accent);
-		text-decoration: underline;
-		text-decoration-color: rgba(0, 92, 132, 0.35);
-		text-underline-offset: 0.2em;
+	/* UI Mockup */
+	.hero-image-placeholder {
+		margin-top: 40px;
+		perspective: 1000px;
 	}
 
-	a:hover {
-		text-decoration-color: var(--accent);
+	.ui-mockup {
+		background: #ffffff;
+		border-radius: 20px;
+		box-shadow: 0 40px 100px rgba(0,0,0,0.1);
+		border: 1px solid rgba(0,0,0,0.05);
+		overflow: hidden;
+		max-width: 900px;
+		margin: 0 auto;
+		transform: rotateX(5deg);
+		transition: transform 0.5s ease;
 	}
 
-	@media (max-width: 700px) {
-		main {
-			margin: 1rem auto;
-			padding: 1.25rem;
-			border-radius: 12px;
+	.ui-mockup:hover {
+		transform: rotateX(0deg);
+	}
+
+	.mockup-header {
+		background: #f5f5f7;
+		padding: 12px 20px;
+		display: flex;
+		align-items: center;
+		gap: 20px;
+	}
+
+	.dots {
+		display: flex;
+		gap: 6px;
+	}
+
+	.dots span {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: #ff5f57;
+	}
+	.dots span:nth-child(2) { background: #febc2e; }
+	.dots span:nth-child(3) { background: #28c840; }
+
+	.mockup-search {
+		background: #fff;
+		flex-grow: 1;
+		border-radius: 6px;
+		padding: 4px 12px;
+		font-size: 12px;
+		text-align: left;
+		color: #86868b;
+	}
+
+	.mockup-body {
+		display: flex;
+		height: 400px;
+	}
+
+	.mockup-sidebar {
+		width: 150px;
+		background: #fbfbfd;
+		border-right: 1px solid rgba(0,0,0,0.05);
+	}
+
+	.mockup-main {
+		flex-grow: 1;
+		padding: 30px;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.mockup-box {
+		background: #f5f5f7;
+		border-radius: 8px;
+	}
+
+	.mockup-box.big { height: 100px; width: 100%; }
+	
+	.mockup-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 20px;
+	}
+
+	.mockup-box.small { height: 150px; }
+
+	/* Features Section */
+	.bg-alt {
+		background: #f5f5f7;
+		width: 100vw;
+		max-width: none;
+		margin-left: calc(50% - 50vw);
+		margin-right: calc(50% - 50vw);
+	}
+
+	.section-header {
+		max-width: 800px;
+		margin: 0 auto 60px;
+	}
+
+	h2 {
+		font-size: clamp(32px, 5vw, 56px);
+		line-height: 1.1;
+		margin-bottom: 20px;
+	}
+
+	.features-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 24px;
+		padding: 0 20px;
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	/* How it works */
+	.steps-container {
+		display: flex;
+		flex-direction: column;
+		gap: 40px;
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
+	.step {
+		display: flex;
+		gap: 32px;
+		align-items: flex-start;
+	}
+
+	.step-num {
+		font-size: 40px;
+		font-weight: 700;
+		color: rgb(var(--accent-rgb));
+		opacity: 0.3;
+	}
+
+	.step-content h3 {
+		font-size: 28px;
+		margin-bottom: 8px;
+	}
+
+	/* Terminal */
+	.terminal-mockup {
+		background: #1d1d1f;
+		border-radius: 12px;
+		padding: 20px;
+		margin: 40px auto;
+		max-width: 600px;
+		text-align: left;
+		box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+	}
+
+	.terminal-body code {
+		display: block;
+		color: #fff;
+		font-family: 'Courier New', Courier, monospace;
+		line-height: 1.6;
+		font-size: 14px;
+	}
+
+	.terminal-body code:first-child { color: #28c840; }
+
+	/* CTA & Footer */
+	.cta-section {
+		padding: 120px 20px;
+	}
+
+	.footer {
+		padding: 60px 20px;
+		border-top: 1px solid rgba(0,0,0,0.05);
+	}
+
+	.footer-container {
+		max-width: 1200px;
+		margin: 0 auto;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.footer-links {
+		display: flex;
+		gap: 20px;
+	}
+
+	.footer-links a {
+		color: var(--text-secondary);
+		text-decoration: none;
+		font-size: 14px;
+	}
+
+	@media (max-width: 768px) {
+		.footer-container {
+			flex-direction: column;
+			gap: 20px;
+			text-align: center;
+		}
+		
+		.step {
+			flex-direction: column;
+			gap: 12px;
 		}
 	}
 </style>
