@@ -1,0 +1,27 @@
+# Azure DevOps Demo Generator
+
+> Purpose: Create complete Azure DevOps demo/training projects from templates.
+
+## Canonical URL
+
+- https://microsoft.github.io/AzureDevOpsDemoGenerator/
+
+## Summary
+
+Azure DevOps Demo Generator provisions Azure DevOps projects with predefined repositories, work items, iterations, boards, pipelines, release definitions, dashboards, wikis, and test artifacts. It is used for hands-on labs, demos, onboarding, and reference automation with Azure DevOps REST APIs.
+
+## Important Links
+
+- Project site: /
+- Repository: https://github.com/microsoft/AzureDevOpsDemoGenerator
+- Hosted generator: https://azuredevopsdemogenerator.azurewebsites.net/
+- Documentation: https://github.com/microsoft/AzureDevOpsDemoGenerator/tree/main/docs
+- API reference: https://github.com/microsoft/AzureDevOpsDemoGenerator/blob/main/docs/Azure-DevOps-Demo-Generator-REST-API-Reference.md
+
+## Key Topics
+
+- Azure DevOps automation
+- Azure DevOps project templates
+- CI/CD starter environments
+- Work item and board seeding
+- DevOps demo data generation

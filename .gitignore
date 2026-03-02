@@ -158,3 +158,23 @@ UpgradeLog.htm
 publish_fix/ 
 crash-logs/
 .tmp*
+
+# Frontend / Node / Astro artifacts
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+*.tsbuildinfo
+coverage/
+
+# Astro-specific output
+site/.astro/
+site/dist/
+site/.vercel/
+site/.netlify/
+
+# Environment and local tooling files
+.env
+.env.*
+!.env.example
+.eslintcache
