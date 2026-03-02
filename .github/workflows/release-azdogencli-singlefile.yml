@@ -102,9 +102,6 @@ jobs:
               exit 1
             fi
           done
-      - name: Authenticate gh CLI
-        run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
       - name: Create or update release
         run: |
           set -euo pipefail
