@@ -114,8 +114,7 @@ jobs:
           )
           gh release create "$tag" "${assets[@]}" \
             --title "AzdoGenCli $tag" \
-            --notes "Self-contained single-file executables" \
-            --target "$tag"
+            --notes "Self-contained single-file executables"
       - name: Verify release assets
         run: |
           set -euo pipefail
