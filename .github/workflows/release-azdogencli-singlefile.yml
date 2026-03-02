@@ -38,7 +38,7 @@ jobs:
           version=${GITHUB_REF_NAME}
           publish_dir=publish/$rid
           mkdir -p "$publish_dir"
-          dotnet publish src/AzdoGenCli/AzdoGenCli.csproj \
+          dotnet publish src/VstsDemoBuilder/VstsDemoBuilder.csproj \
             -c Release \
             -r "$rid" \
             -p:PublishSingleFile=true \
