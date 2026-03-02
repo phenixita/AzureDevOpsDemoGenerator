@@ -1,7 +1,7 @@
 ---
 description: "Expert troubleshooter for Azure infrastructure, deployment issues, App Service problems, Bicep templates, Azure CLI errors, resource configuration, authentication failures, and deployment pipeline debugging. Use when: diagnosing Azure errors, fixing infrastructure issues, debugging deployments, resolving configuration problems, investigating service failures, or analyzing Azure logs."
 name: "Azure Troubleshooter"
-tools: [read, search, execute, web, todo, context7/*]
+tools: [read, search, execute, web, todo, context7/*, vscode/memory]
 argument-hint: "Describe the Azure issue or error you're experiencing"
 model: Claude Opus 4.6 (copilot)
 ---

@@ -2,7 +2,7 @@
 description: "Skeptical code reviewer for C# changes. Critical gatekeeper that validates architecture, conventions, security, performance, and quality before GitHub PR creation. Use when: reviewing coder changes, validating implementations, checking for violations, approving PRs, or auditing code quality."
 name: "csharp-reviewer"
 model: Gemini 3 Flash (Preview) (copilot)
-tools: [read, search, execute, web]
+tools: [read, search, execute, web, vscode/memory]
 argument-hint: "Files or changes to review before PR"
 ---
 
