@@ -18,6 +18,7 @@ namespace AzdoGenCli
         public bool ConsoleOutput { get; set; }
         public bool ListTemplates { get; set; }
         public bool ShowHelp { get; set; }
+        public bool ClearCache { get; set; }
 
         /// <summary>
         /// Parse command-line arguments into CliArgs instance
@@ -65,6 +66,10 @@ namespace AzdoGenCli
                 {
                     result.ListTemplates = true;
                 }
+                else if (arg == "--logout" || arg == "--clear-cache" || arg == "-logout")
+                {
+                    result.ClearCache = true;
+                }
                 else if (arg == "--help" || arg == "-help" || arg == "-h")
                 {
                     result.ShowHelp = true;
@@ -91,6 +96,7 @@ OPTIONS:
     --template <name>       Template name to apply (use --list-templates to see available)
     
     --list-templates        List all available embedded templates and exit
+    --logout, --clear-cache Clear cached OAuth token and exit
     --verbose               Enable detailed debug logging
     --console               Output logs to console (in addition to file)
     --dry-run               Show what would be done without making changes

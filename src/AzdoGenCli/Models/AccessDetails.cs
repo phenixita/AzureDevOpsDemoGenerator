@@ -12,5 +12,6 @@ namespace AzdoGenCli.Models
         public string? refresh_token { get; set; }
         public string? error { get; set; }
         public string? error_description { get; set; }
+        public DateTime? acquired_at { get; set; }
     }
 }
