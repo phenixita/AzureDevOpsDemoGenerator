@@ -25,6 +25,7 @@ namespace AzdoGenCli.Auth
         {
             try
             {
+                token.acquired_at = DateTime.UtcNow;
                 string path = GetCachePath();
                 string json = JsonConvert.SerializeObject(token, Formatting.Indented);
                 File.WriteAllText(path, json);
@@ -54,9 +55,23 @@ namespace AzdoGenCli.Auth
                     return null;
                 }
 
-                // Check if token is expired (basic check, tokens usually last 1 hour)
-                // AccessDetails doesn't seem to have an 'expires_at' property in the model, 
-                // but it should have 'expires_in'.
+                // Check if token is expired or close to (default to 1 hour if expires_in is missing)
+                if (token.acquired_at.HasValue)
+                {
+                    int expiresInSeconds = 3600;
+                    if (int.TryParse(token.expires_in, out int parsedExpiresIn))
+                    {
+                        expiresInSeconds = parsedExpiresIn;
+                    }
+
+                    // If less than 5 minutes left, consider it expired to trigger refresh
+                    var expirationTime = token.acquired_at.Value.AddSeconds(expiresInSeconds).AddMinutes(-5);
+                    if (DateTime.UtcNow > expirationTime)
+                    {
+                        logger?.LogInformation("Cached access token is expired or expiring soon");
+                        return token; // Return it anyway so we can try to refresh it
+                    }
+                }
                 
                 logger?.LogDebug("Token loaded from cache: {Path}", path);
                 return token;

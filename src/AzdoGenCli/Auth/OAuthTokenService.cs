@@ -17,17 +17,23 @@ namespace AzdoGenCli.Auth
     public static class OAuthTokenService
     {
         /// <summary>
-        /// Build token request body for Entra OAuth 2.0 authorization code exchange (public client)
+        /// Build token request body for Entra OAuth 2.0 authorization code exchange
         /// </summary>
-        public static string GenerateRequestPostData(string clientId, string authCode, string callbackUrl, string appScope)
+        public static string GenerateRequestPostData(string clientId, string authCode, string callbackUrl, string appScope, string? clientSecret = null, string? codeVerifier = null)
         {
-            return string.Format(
-                "client_id={0}&code={1}&redirect_uri={2}&grant_type=authorization_code&scope={3}",
-                WebUtility.UrlEncode(clientId),
-                WebUtility.UrlEncode(authCode),
-                WebUtility.UrlEncode(callbackUrl),
-                WebUtility.UrlEncode(appScope)
-            );
+            var data = $"client_id={WebUtility.UrlEncode(clientId)}&code={WebUtility.UrlEncode(authCode)}&redirect_uri={WebUtility.UrlEncode(callbackUrl)}&grant_type=authorization_code&scope={WebUtility.UrlEncode(appScope)}";
+            
+            if (!string.IsNullOrEmpty(clientSecret))
+            {
+                data += $"&client_secret={WebUtility.UrlEncode(clientSecret)}";
+            }
+
+            if (!string.IsNullOrEmpty(codeVerifier))
+            {
+                data += $"&code_verifier={WebUtility.UrlEncode(codeVerifier)}";
+            }
+
+            return data;
         }
 
         /// <summary>

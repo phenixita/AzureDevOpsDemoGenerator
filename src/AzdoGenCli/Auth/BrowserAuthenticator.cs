@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Web;
 using System.Text;
 using System.Threading;
@@ -24,7 +25,7 @@ namespace AzdoGenCli.Auth
         private const string NativeClientRedirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
 
         /// <summary>
-        /// Authenticate user via OAuth 2.0 browser flow
+        /// Authenticate user via OAuth 2.0 browser flow with PKCE
         /// Returns AccessDetails with token on success, or throws on failure
         /// </summary>
         public static async Task<AccessDetails> AuthenticateAsync(IConfiguration config, ILogger logger)
@@ -32,15 +33,17 @@ namespace AzdoGenCli.Auth
             // Read OAuth configuration
             string tenantId = config["LegacyAppSettings:TenantId"] ?? "common";
             string? clientId = config["LegacyAppSettings:ClientId"];
+            string? clientSecret = config["LegacyAppSettings:ClientSecret"];
             string? appScope = config["LegacyAppSettings:appScope"];
             string? configuredRedirectUri = config["LegacyAppSettings:RedirectUri"]?.Trim();
             
-            logger.LogDebug("Using public client (non-confidential) OAuth flow - no client secret");
-
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(appScope))
             {
                 throw new InvalidOperationException("ClientId and appScope must be configured in appsettings.json");
             }
+
+            // Generate PKCE challenge
+            var (codeVerifier, codeChallenge) = GeneratePkceChallenge();
 
             bool hasConfiguredRedirectUri = !string.IsNullOrWhiteSpace(configuredRedirectUri);
             bool isNativeClientMode = IsNativeClientRedirectUri(configuredRedirectUri);
@@ -52,27 +55,27 @@ namespace AzdoGenCli.Auth
             {
                 callbackUrl = configuredRedirectUri!;
                 listenerPrefix = string.Empty;
-                logger.LogDebug("Using configured OAuth redirect URI: {RedirectUri}", callbackUrl);
             }
             else
             {
                 int port = FindFreePort(5001, 5099);
                 if (port == -1)
                 {
-                    throw new InvalidOperationException("No free port available in range 5001-5099 for OAuth callback");
+                    throw new InvalidOperationException("No free port available for OAuth callback");
                 }
 
                 callbackUrl = $"http://localhost:{port}";
                 listenerPrefix = $"http://localhost:{port}/";
-                logger.LogDebug("Using generated OAuth callback URL: {CallbackUrl}", callbackUrl);
             }
 
-            // Build OAuth authorize URL
+            // Build OAuth authorize URL with PKCE challenge
             string authorizeUrl = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize?" +
                                   $"client_id={WebUtility.UrlEncode(clientId)}&" +
                                   $"response_type=code&" +
                                   $"redirect_uri={WebUtility.UrlEncode(callbackUrl)}&" +
                                   $"scope={WebUtility.UrlEncode(appScope)}&" +
+                                  $"code_challenge={WebUtility.UrlEncode(codeChallenge)}&" +
+                                  $"code_challenge_method=S256&" +
                                   $"response_mode=query";
 
             if (isNativeClientMode)
@@ -81,30 +84,26 @@ namespace AzdoGenCli.Auth
                     authorizeUrl,
                     callbackUrl,
                     clientId,
+                    clientSecret,
                     appScope,
                     tenantId,
+                    codeVerifier,
                     logger);
             }
 
-            if (hasConfiguredRedirectUri)
+            if (hasConfiguredRedirectUri && !TryGetHttpListenerPrefix(callbackUrl, out listenerPrefix))
             {
-                if (!TryGetHttpListenerPrefix(callbackUrl, out listenerPrefix))
-                {
-                    throw new InvalidOperationException(
-                        $"Configured RedirectUri '{callbackUrl}' is not supported for automatic callback capture. " +
-                        $"Use '{NativeClientRedirectUri}' for manual copy/paste mode, or leave RedirectUri empty for localhost listener mode.");
-                }
+                throw new InvalidOperationException(
+                    $"Configured RedirectUri '{callbackUrl}' is not supported for automatic callback capture.");
             }
 
             // Start HTTP listener
             HttpListener listener = new HttpListener();
             listener.Prefixes.Add(listenerPrefix);
             listener.Start();
-            logger.LogDebug("HTTP listener started with prefix {ListenerPrefix}", listenerPrefix);
 
             try
             {
-                // Display URL to user
                 Console.WriteLine();
                 Console.WriteLine("╔══════════════════════════════════════════════════════════════════════════════╗");
                 Console.WriteLine("║  Azure DevOps Authentication Required                                       ║");
@@ -119,14 +118,11 @@ namespace AzdoGenCli.Auth
                 Console.WriteLine("Waiting for authentication to complete...");
                 Console.WriteLine();
 
-                // Auto-open browser
                 OpenBrowser(authorizeUrl);
 
-                // Wait for callback with 2-minute timeout
                 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
                 var context = await listener.GetContextAsync().WaitAsync(cts.Token);
 
-                // Extract authorization code from query string
                 string? code = context.Request.QueryString["code"];
                 string? error = context.Request.QueryString["error"];
 
@@ -143,11 +139,8 @@ namespace AzdoGenCli.Auth
                     throw new InvalidOperationException("No authorization code received from OAuth callback");
                 }
 
-                logger.LogDebug("Authorization code received, exchanging for token...");
-
-                // Exchange authorization code for access token
                 string tokenRequestBody = OAuthTokenService.GenerateRequestPostData(
-                    clientId, code, callbackUrl, appScope);
+                    clientId, code, callbackUrl, appScope, clientSecret, codeVerifier);
                 
                 AccessDetails tokenDetails = OAuthTokenService.GetAccessToken(tokenRequestBody, tenantId, logger);
 
@@ -157,23 +150,39 @@ namespace AzdoGenCli.Auth
                     throw new InvalidOperationException($"Token exchange failed: {tokenDetails.error_description}");
                 }
 
-                // Success!
                 SendBrowserResponse(context.Response, "Authentication successful! You can close this window.", true);
-                logger.LogInformation("OAuth authentication completed successfully");
-
                 return tokenDetails;
-            }
-            catch (OperationCanceledException)
-            {
-                logger.LogError("Authentication timed out after 2 minutes");
-                throw new TimeoutException("Authentication timed out. Please try again.");
             }
             finally
             {
                 listener.Stop();
                 listener.Close();
-                logger.LogDebug("HTTP listener stopped");
             }
+        }
+
+        private static (string verifier, string challenge) GeneratePkceChallenge()
+        {
+            byte[] verifierBytes = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(verifierBytes);
+            }
+            string verifier = Base64UrlEncode(verifierBytes);
+
+            byte[] challengeBytes;
+            using (var sha256 = SHA256.Create())
+            {
+                challengeBytes = sha256.ComputeHash(Encoding.ASCII.GetBytes(verifier));
+            }
+            string challenge = Base64UrlEncode(challengeBytes);
+
+            return (verifier, challenge);
+        }
+
+        private static string Base64UrlEncode(byte[] bytes)
+        {
+            string base64 = Convert.ToBase64String(bytes);
+            return base64.Replace("+", "-").Replace("/", "_").Replace("=", "");
         }
 
         private static void OpenBrowser(string url)
@@ -195,7 +204,6 @@ namespace AzdoGenCli.Auth
             }
             catch (Exception ex)
             {
-                // Fallback to manual if browser open fails
                 Debug.WriteLine($"Failed to open browser: {ex.Message}");
             }
         }
@@ -204,8 +212,10 @@ namespace AzdoGenCli.Auth
             string authorizeUrl,
             string callbackUrl,
             string clientId,
+            string? clientSecret,
             string appScope,
             string tenantId,
+            string codeVerifier,
             ILogger logger)
         {
             Console.WriteLine();
@@ -249,13 +259,13 @@ namespace AzdoGenCli.Auth
                 throw new InvalidOperationException("No authorization code found in redirected URL query string.");
             }
 
-            logger.LogDebug("Authorization code received from manual redirected URL, exchanging for token...");
-
             string tokenRequestBody = OAuthTokenService.GenerateRequestPostData(
                 clientId,
                 code,
                 callbackUrl,
-                appScope);
+                appScope,
+                clientSecret,
+                codeVerifier);
 
             AccessDetails tokenDetails = OAuthTokenService.GetAccessToken(tokenRequestBody, tenantId, logger);
             if (!string.IsNullOrEmpty(tokenDetails.error))
@@ -263,7 +273,6 @@ namespace AzdoGenCli.Auth
                 throw new InvalidOperationException($"Token exchange failed: {tokenDetails.error_description}");
             }
 
-            logger.LogInformation("OAuth authentication completed successfully using manual redirect URI mode");
             return tokenDetails;
         }
 
@@ -280,7 +289,7 @@ namespace AzdoGenCli.Auth
                 if (char.IsControl(character))
                 {
                     throw new InvalidOperationException(
-                        "The provided redirected URL contains invalid control characters. Paste the full URL from the browser address bar.");
+                        "The provided redirected URL contains invalid control characters.");
                 }
             }
 
@@ -348,10 +357,6 @@ namespace AzdoGenCli.Auth
             return uri.Trim().TrimEnd('/');
         }
 
-        /// <summary>
-        /// Find a free TCP port in the specified range
-        /// Returns -1 if no port is available
-        /// </summary>
         private static int FindFreePort(int startPort, int endPort)
         {
             for (int port = startPort; port <= endPort; port++)
@@ -365,15 +370,11 @@ namespace AzdoGenCli.Auth
                 }
                 catch (SocketException)
                 {
-                    // Port is in use, try next one
                 }
             }
             return -1;
         }
 
-        /// <summary>
-        /// Send simple HTML response to browser
-        /// </summary>
         private static void SendBrowserResponse(HttpListenerResponse response, string message, bool success)
         {
             string color = success ? "#28a745" : "#dc3545";

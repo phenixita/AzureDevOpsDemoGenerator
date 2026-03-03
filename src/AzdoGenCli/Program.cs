@@ -68,8 +68,8 @@ class Program
             Console.WriteLine();
 
             // Authentication flow
-            string accessToken = null;
-            AccessDetails oauthToken = null;
+            string? accessToken = null;
+            AccessDetails? oauthToken = null;
 
             if (!string.IsNullOrEmpty(cliArgs.Pat))
             {
@@ -92,19 +92,66 @@ class Program
 
                 if (oauthToken != null && !string.IsNullOrEmpty(oauthToken.access_token))
                 {
-                    logger.LogInformation("Using cached OAuth token");
-                    accessToken = oauthToken.access_token;
-                    Console.WriteLine("✓ Using cached authentication");
+                    // Check if token needs refresh
+                    bool needsRefresh = false;
+                    if (oauthToken.acquired_at.HasValue)
+                    {
+                        int expiresInSeconds = 3600;
+                        if (int.TryParse(oauthToken.expires_in, out int parsedExpiresIn))
+                        {
+                            expiresInSeconds = parsedExpiresIn;
+                        }
+                        
+                        var expirationTime = oauthToken.acquired_at.Value.AddSeconds(expiresInSeconds).AddMinutes(-5);
+                        if (DateTime.UtcNow > expirationTime)
+                        {
+                            needsRefresh = true;
+                        }
+                    }
+
+                    if (needsRefresh && !string.IsNullOrEmpty(oauthToken.refresh_token))
+                    {
+                        logger.LogInformation("Attempting silent token refresh");
+                        Console.WriteLine("🔄 Refreshing authentication...");
+                        
+                        var tenantId = configuration["LegacyAppSettings:TenantId"] ?? "common";
+                        var clientId = configuration["LegacyAppSettings:ClientId"] ?? "71a1f726-dc00-4477-a038-5087fd0e71d3";
+                        var appScope = configuration["LegacyAppSettings:appScope"] ?? "499b84ac-1321-427f-aa17-267ca6975798/.default offline_access";
+                        var redirectUri = configuration["LegacyAppSettings:RedirectUri"] ?? "http://localhost:5001";
+
+                        var refreshedToken = OAuthTokenService.Refresh_AccessToken(
+                            oauthToken.refresh_token!, 
+                            tenantId, 
+                            redirectUri, 
+                            clientId, 
+                            appScope, 
+                            logger);
+                        
+                        if (refreshedToken != null && !string.IsNullOrEmpty(refreshedToken.access_token))
+                        {
+                            oauthToken = refreshedToken;
+                            TokenCache.SaveToken(oauthToken, logger);
+                            accessToken = oauthToken.access_token;
+                            logger.LogInformation("Silent token refresh successful");
+                        }
+                        else
+                        {
+                            logger.LogWarning("Silent token refresh failed. Will require interactive login.");
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(accessToken))
+                    {
+                        accessToken = oauthToken.access_token;
+                        Console.WriteLine("✓ Using cached authentication");
+                    }
                 }
-                
-                // If no token or if we want to be sure, we could validate it here
-                // For now, we'll try to use it and if it fails in InputCollector, we'll catch it.
             }
 
             // Phase 4: Input Collection & Template Discovery
             logger.LogInformation("Starting input collection phase");
             
-            CliInput cliInput = null;
+            CliInput? cliInput = null;
             bool authenticated = false;
             int authRetries = 0;
 
@@ -142,7 +189,7 @@ class Program
                     cliInput = InputCollector.CollectInput(
                         cliArgs, 
                         oauthToken, 
-                        accessToken, 
+                        accessToken!, 
                         configuration, 
                         logger);
                     authenticated = true;
