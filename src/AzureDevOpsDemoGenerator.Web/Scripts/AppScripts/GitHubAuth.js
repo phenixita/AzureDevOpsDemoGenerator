@@ -1,8 +1,8 @@
 ﻿var mywindown;
 $(document).ready(function () {
     $('#githubAuth').click(function () {
-        var reqorigon = window.location.origin;
-        mywindown = window.open(reqorigon + "/GitHub/GitOauth", "Azure DevOps Demo Generator", "width=500,height=500",
+        var reqorigin = window.location.origin;
+        mywindown = window.open(reqorigin + "/GitHub/GitOauth", "Azure DevOps Demo Generator", "width=500,height=500",
             "width=300,height=400,scrollbars=yes");
         checkSession();
         gtag('event', 'GitHubAuthorize', {
