@@ -8,8 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\VstsDemoBuilder\VstsDemoBuilder.csproj" />
-    <ProjectReference Include="..\VstsRestAPI\VstsRestAPI.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Core\AzureDevOpsDemoGenerator.Modules.Core.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Project\AzureDevOpsDemoGenerator.Modules.Project.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Template\AzureDevOpsDemoGenerator.Modules.Template.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Account\AzureDevOpsDemoGenerator.Modules.Account.csproj" />
+    <ProjectReference Include="..\Infrastructure\AzureDevOpsDemoGenerator.Infrastructure\AzureDevOpsDemoGenerator.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>AzureDevOpsDemoGenerator.Modules.Template</RootNamespace>
+    <AssemblyName>AzureDevOpsDemoGenerator.Modules.Template</AssemblyName>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NuGetAuditMode>direct</NuGetAuditMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.17" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.9" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Modules\AzureDevOpsDemoGenerator.Modules.Core\AzureDevOpsDemoGenerator.Modules.Core.csproj" />
+    <ProjectReference Include="..\..\Modules\AzureDevOpsDemoGenerator.Modules.Project\AzureDevOpsDemoGenerator.Modules.Project.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\AzureDevOpsDemoGenerator.Infrastructure\AzureDevOpsDemoGenerator.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

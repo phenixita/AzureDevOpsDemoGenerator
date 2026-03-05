@@ -63,7 +63,7 @@ namespace AzdoGenCli.Services
 
         private bool CheckForErrors(string modelId, string org, string projectName)
         {
-            var statusMessages = VstsDemoBuilder.Services.ProjectService.StatusMessages;
+            var statusMessages = AzureDevOpsDemoGenerator.Modules.Project.ProjectService.StatusMessages;
             
             // Check for general errors
             var errorKey = modelId + "_Errors";

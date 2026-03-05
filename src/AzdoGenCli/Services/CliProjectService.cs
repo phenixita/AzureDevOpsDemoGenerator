@@ -3,8 +3,8 @@ using System.IO;
 using AzdoGenCli.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using VstsDemoBuilder.Models;
-using VstsDemoBuilder.Services;
+using AzureDevOpsDemoGenerator.Modules.Core;
+using AzureDevOpsDemoGenerator.Modules.Project;
 
 namespace AzdoGenCli.Services
 {
@@ -37,7 +37,7 @@ namespace AzdoGenCli.Services
             var contentRoot = Directory.GetParent(templatesRoot)?.FullName;
             if (!string.IsNullOrWhiteSpace(contentRoot))
             {
-                VstsDemoBuilder.Infrastructure.AppPath.ContentRootPath = contentRoot;
+                AzureDevOpsDemoGenerator.Modules.Core.AppPath.ContentRootPath = contentRoot;
                 AzdoGenCli.Infrastructure.AppPath.ContentRootPath = contentRoot;
             }
 
