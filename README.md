@@ -5,7 +5,9 @@ CLI-first toolkit for generating Azure DevOps demo projects from curated templat
 This repository contains:
 
 - `src/AzdoGenCli`: modern command-line experience for provisioning demo projects
-- `src/VstsDemoBuilder` and `src/VstsRestAPI`: underlying provisioning engine used by the CLI
+- `src/AzureDevOpsDemoGenerator.Web`: ASP.NET Core web application
+- `src/Modules/`: modular business-logic libraries (Account, Project, Template, Extractor, Core)
+- `src/Infrastructure/AzureDevOpsDemoGenerator.Infrastructure`: Azure DevOps REST API client library
 
 ## AzdoGenCli Quick Start (GitHub Release EXE)
 
@@ -196,8 +198,8 @@ Then copy one of the listed short names.
 If you are developing from source:
 
 ```powershell
-dotnet restore src\VSTSDemoGeneratorV2.sln
-dotnet build src\VSTSDemoGeneratorV2.sln
+dotnet restore src\AzureDevOpsDemoGenerator.sln
+dotnet build src\AzureDevOpsDemoGenerator.sln
 dotnet run --project src\AzdoGenCli -- --help
 ```
 
