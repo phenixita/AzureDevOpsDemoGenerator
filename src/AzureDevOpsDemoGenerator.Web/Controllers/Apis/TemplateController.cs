@@ -1,0 +1,36 @@
+using Microsoft.AspNetCore.Mvc;
+using AzureDevOpsDemoGenerator.Modules.Account;
+using AzureDevOpsDemoGenerator.Modules.Project;
+using AzureDevOpsDemoGenerator.Modules.Template;
+using AzureDevOpsDemoGenerator.Modules.Extractor;
+
+namespace AzureDevOpsDemoGenerator.Web.Controllers.Apis
+{
+    [ApiController]
+    [Route("api/templates")]
+    public class TemplateController : ControllerBase
+    {
+        private readonly ITemplateService templateService;
+
+        public TemplateController(ITemplateService templateService)
+        {
+            this.templateService = templateService;
+        }
+
+        [HttpGet("AllTemplates")]
+        public IActionResult GetTemplates()
+        {
+            ProjectService.TrackFeature("api/templates/Alltemplates");
+            var templates = templateService.GetAllTemplates();
+            return Ok(templates);
+        }
+
+        [HttpGet("TemplatesByTags")]
+        public IActionResult TemplatesByTags(string tags)
+        {
+            ProjectService.TrackFeature("api/templates/TemplateByTags");
+            var templates = templateService.GetTemplatesByTags(tags);
+            return Ok(templates);
+        }
+    }
+}

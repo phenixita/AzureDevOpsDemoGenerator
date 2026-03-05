@@ -12,7 +12,7 @@ namespace AzdoGenCli.Auth
 {
     /// <summary>
     /// OAuth 2.0 token service for Azure DevOps Entra authentication
-    /// Ported from VstsDemoBuilder.Services.AccountService
+    /// Ported from AzureDevOpsDemoGenerator.Modules.Account.AccountService
     /// </summary>
     public static class OAuthTokenService
     {

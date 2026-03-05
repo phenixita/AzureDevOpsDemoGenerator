@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>AzureDevOpsDemoGenerator.Web</RootNamespace>
+    <AssemblyName>AzureDevOpsDemoGenerator.Web</AssemblyName>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UserSecretsId>f7c988df-2ba4-4f99-873d-5912d2546c5f</UserSecretsId>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Core\AzureDevOpsDemoGenerator.Modules.Core.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Account\AzureDevOpsDemoGenerator.Modules.Account.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Project\AzureDevOpsDemoGenerator.Modules.Project.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Template\AzureDevOpsDemoGenerator.Modules.Template.csproj" />
+    <ProjectReference Include="..\Modules\AzureDevOpsDemoGenerator.Modules.Extractor\AzureDevOpsDemoGenerator.Modules.Extractor.csproj" />
+    <ProjectReference Include="..\Infrastructure\AzureDevOpsDemoGenerator.Infrastructure\AzureDevOpsDemoGenerator.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="App_Start\**\*.cs;Global.asax.cs;ErrorHandler\AiHandleErrorAttribute.cs" />
+  </ItemGroup>
+
+  <!-- Keep legacy config files in source, but never publish them on ASP.NET Core -->
+  <ItemGroup>
+    <Content Update="Web.config;Web.Debug.config;Web.Release.config;Views\Web.config">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <None Update="Web.config;Web.Debug.config;Web.Release.config;Views\Web.config">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Legacy ASP.NET MVC static assets – publish alongside app (not under wwwroot) -->
+  <ItemGroup>
+    <Content Include="Content\**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Scripts\**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="assets\**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Images\**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="fonts\**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="EmailTemplates\**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Templates\TemplateImages\**" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.17" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.9" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="20.268.0-preview" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.ExtensionManagement.WebApi" Version="20.268.0-preview" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.4" />
+  </ItemGroup>
+</Project>
