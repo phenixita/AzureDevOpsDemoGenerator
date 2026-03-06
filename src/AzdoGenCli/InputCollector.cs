@@ -266,7 +266,8 @@ namespace AzdoGenCli
                         // Fetch profile and accounts for OAuth flow
                         logger.LogDebug("Fetching user profile and accounts");
                         var baseAddress = configuration["LegacyAppSettings:BaseAddress"] ?? "https://app.vssps.visualstudio.com/";
-                        var defaultApiVersion = configuration["LegacyAppSettings:DefaultApiVersion"];
+                        var defaultApiVersion = configuration["LegacyAppSettings:DefaultApiVersion"]
+                            ?? throw new InvalidOperationException("LegacyAppSettings:DefaultApiVersion is required.");
                         var profileApiVersion = configuration["LegacyAppSettings:ProfileApiVersion"] ?? defaultApiVersion;
                         var accountsApiVersion = configuration["LegacyAppSettings:AccountsApiVersion"] ?? defaultApiVersion;
 
