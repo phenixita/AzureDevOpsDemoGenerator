@@ -270,6 +270,8 @@ namespace VstsDemoBuilder.Controllers.Apis
                             string url = System.Configuration.ConfigurationManager.AppSettings["URL"];
                             string projectId = System.Configuration.ConfigurationManager.AppSettings["PROJECTID"];
                             string issueName = string.Format("{0}_{1}", templateUsed, DateTime.Now.ToString("ddMMMyyyy_HHmmss"));
+                            string issueApiVersion = System.Configuration.ConfigurationManager.AppSettings["WorkItemsVersion"]
+                                ?? System.Configuration.ConfigurationManager.AppSettings["DefaultApiVersion"];
                             IssueWI objIssue = new IssueWI();
 
                             errorMessages = errorMessages + Environment.NewLine + "TemplateUsed: " + templateUsed;
@@ -279,7 +281,7 @@ namespace VstsDemoBuilder.Controllers.Apis
                             string logWIT = System.Configuration.ConfigurationManager.AppSettings["LogWIT"];
                             if (logWIT == "true")
                             {
-                                objIssue.CreateIssueWI(patBase64, "4.1", url, issueName, errorMessages, projectId, "Demo Generator");
+                                objIssue.CreateIssueWI(patBase64, issueApiVersion, url, issueName, errorMessages, projectId, "Demo Generator");
                             }
                         }
                     }

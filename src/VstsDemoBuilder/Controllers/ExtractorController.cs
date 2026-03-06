@@ -204,12 +204,14 @@ namespace VstsDemoBuilder.Controllers
                     string url = System.Configuration.ConfigurationManager.AppSettings["URL"];
                     string projectId = System.Configuration.ConfigurationManager.AppSettings["PROJECTID"];
                     string issueName = string.Format("{0}_{1}", "Extractor_", DateTime.Now.ToString("ddMMMyyyy_HHmmss"));
+                    string issueApiVersion = System.Configuration.ConfigurationManager.AppSettings["WorkItemsVersion"]
+                        ?? System.Configuration.ConfigurationManager.AppSettings["DefaultApiVersion"];
                     IssueWI objIssue = new IssueWI();
                     ExtractorService.logger.Info(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "\t Extractor_" + errorMessages + "\n");
                     string logWIT = "true"; //System.Configuration.ConfigurationManager.AppSettings["LogWIT"];
                     if (logWIT == "true")
                     {
-                        objIssue.CreateIssueWI(patBase64, "4.1", url, issueName, errorMessages, projectId, "Extractor");
+                        objIssue.CreateIssueWI(patBase64, issueApiVersion, url, issueName, errorMessages, projectId, "Extractor");
                     }
                 }
             }

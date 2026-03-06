@@ -266,12 +266,15 @@ namespace AzdoGenCli
                         // Fetch profile and accounts for OAuth flow
                         logger.LogDebug("Fetching user profile and accounts");
                         var baseAddress = configuration["LegacyAppSettings:BaseAddress"] ?? "https://app.vssps.visualstudio.com/";
-                        
-                        var profile = OAuthTokenService.GetProfile(oauthToken!, baseAddress, logger);
+                        var defaultApiVersion = configuration["LegacyAppSettings:DefaultApiVersion"];
+                        var profileApiVersion = configuration["LegacyAppSettings:ProfileApiVersion"] ?? defaultApiVersion;
+                        var accountsApiVersion = configuration["LegacyAppSettings:AccountsApiVersion"] ?? defaultApiVersion;
+
+                        var profile = OAuthTokenService.GetProfile(oauthToken!, baseAddress, profileApiVersion, logger);
                         if (profile != null && !string.IsNullOrEmpty(profile.id))
                         {
                             logger.LogDebug("Profile ID: {ProfileId}", profile.id);
-                            var accountList = OAuthTokenService.GetAccounts(profile.id, oauthToken!, baseAddress, logger);
+                            var accountList = OAuthTokenService.GetAccounts(profile.id, oauthToken!, baseAddress, accountsApiVersion, logger);
                             accounts = accountList.value?.ToList();
                             logger.LogInformation("Found {AccountCount} accounts", accounts?.Count ?? 0);
                         }

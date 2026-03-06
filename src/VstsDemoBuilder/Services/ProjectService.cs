@@ -241,9 +241,11 @@ namespace VstsDemoBuilder.Services
                 string patBase64 = System.Configuration.ConfigurationManager.AppSettings["PATBase64"];
                 string url = System.Configuration.ConfigurationManager.AppSettings["URL"];
                 string projectId = System.Configuration.ConfigurationManager.AppSettings["PROJECTID"];
+                string reportApiVersion = System.Configuration.ConfigurationManager.AppSettings["WorkItemsVersion"]
+                    ?? System.Configuration.ConfigurationManager.AppSettings["DefaultApiVersion"];
                 string reportName = string.Format("{0}", "AzureDevOps_Analytics-DemoGenerator");
                 IssueWI objIssue = new IssueWI();
-                objIssue.CreateReportWI(patBase64, "4.1", url, websiteUrl, reportName, "", templateUsed, projectId, model.Region);
+                objIssue.CreateReportWI(patBase64, reportApiVersion, url, websiteUrl, reportName, "", templateUsed, projectId, model.Region);
             }
 
             Configuration _gitHubConfig = new Configuration() { _gitbaseAddress = gitHubBaseAddress, _gitcredential = model.GitHubToken, _mediaType = "application/json", _scheme = "Bearer" };
