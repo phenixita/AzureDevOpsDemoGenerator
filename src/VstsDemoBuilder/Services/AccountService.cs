@@ -86,12 +86,14 @@ namespace VstsDemoBuilder.Services
                 try
                 {
                     string baseAddress = System.Configuration.ConfigurationManager.AppSettings["BaseAddress"];
+                    string profileApiVersion = System.Configuration.ConfigurationManager.AppSettings["ProfileApiVersion"]
+                        ?? System.Configuration.ConfigurationManager.AppSettings["DefaultApiVersion"];
 
                     client.BaseAddress = new Uri(baseAddress);
                     client.DefaultRequestHeaders.Accept.Clear();
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessDetails.access_token);
-                    HttpResponseMessage response = client.GetAsync("_apis/profile/profiles/me?details=true&api-version=4.1").Result;
+                    HttpResponseMessage response = client.GetAsync("_apis/profile/profiles/me?details=true&api-version=" + profileApiVersion).Result;
                     if (response.IsSuccessStatusCode && response.StatusCode == HttpStatusCode.OK)
                     {
                         string result = response.Content.ReadAsStringAsync().Result;
@@ -171,8 +173,10 @@ namespace VstsDemoBuilder.Services
             AccountsResponse.AccountList accounts = new AccountsResponse.AccountList();
             var client = new HttpClient();
             string baseAddress = System.Configuration.ConfigurationManager.AppSettings["BaseAddress"];
+            string accountsApiVersion = System.Configuration.ConfigurationManager.AppSettings["AccountsApiVersion"]
+                ?? System.Configuration.ConfigurationManager.AppSettings["DefaultApiVersion"];
 
-            string requestContent = baseAddress + "/_apis/Accounts?memberId=" + memberID + "&api-version=4.1";
+            string requestContent = baseAddress + "/_apis/Accounts?memberId=" + memberID + "&api-version=" + accountsApiVersion;
             var request = new HttpRequestMessage(HttpMethod.Get, requestContent);
             request.Headers.Add("Authorization", "Bearer " + details.access_token);
             try

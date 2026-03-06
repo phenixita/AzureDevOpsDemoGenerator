@@ -54,7 +54,7 @@ namespace VstsRestAPI.Extractor
                 using (var client = GetHttpClient())
                 {
 
-                    HttpResponseMessage response = client.GetAsync("https://vsrm.dev.azure.com/" + Account + "//" + Project + "/_apis/release/definitions?api-version=4.1-preview.3").Result;
+                    HttpResponseMessage response = client.GetAsync("https://vsrm.dev.azure.com/" + Account + "//" + Project + "/_apis/release/definitions?api-version=" + _configuration.VersionNumber).Result;
                     if (response.IsSuccessStatusCode && response.StatusCode == System.Net.HttpStatusCode.OK)
                     {
                         string result = response.Content.ReadAsStringAsync().Result;
@@ -84,7 +84,7 @@ namespace VstsRestAPI.Extractor
             {
                 using (var client = GetHttpClient())
                 {
-                    HttpResponseMessage response = client.GetAsync(Project + "/_apis/release/definitions?api-version=4.1-preview.3").Result;
+                    HttpResponseMessage response = client.GetAsync(Project + "/_apis/release/definitions?api-version=" + _configuration.VersionNumber).Result;
                     if (response.IsSuccessStatusCode && response.StatusCode == System.Net.HttpStatusCode.OK)
                     {
                         string result = response.Content.ReadAsStringAsync().Result;

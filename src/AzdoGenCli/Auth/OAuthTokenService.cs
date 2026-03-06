@@ -74,7 +74,7 @@ namespace AzdoGenCli.Auth
         /// <summary>
         /// Get user profile details from Azure DevOps
         /// </summary>
-        public static ProfileDetails? GetProfile(AccessDetails accessDetails, string baseAddress, ILogger? logger = null)
+        public static ProfileDetails? GetProfile(AccessDetails accessDetails, string baseAddress, string apiVersion, ILogger? logger = null)
         {
             using (var client = new HttpClient())
             {
@@ -85,7 +85,7 @@ namespace AzdoGenCli.Auth
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessDetails.access_token);
                     
-                    HttpResponseMessage response = client.GetAsync("_apis/profile/profiles/me?details=true&api-version=4.1").Result;
+                    HttpResponseMessage response = client.GetAsync("_apis/profile/profiles/me?details=true&api-version=" + apiVersion).Result;
                     
                     if (response.IsSuccessStatusCode && response.StatusCode == HttpStatusCode.OK)
                     {
@@ -110,11 +110,11 @@ namespace AzdoGenCli.Auth
         /// <summary>
         /// Get list of Azure DevOps accounts (organizations) accessible to the user
         /// </summary>
-        public static AccountsResponse.AccountList GetAccounts(string memberID, AccessDetails details, string baseAddress, ILogger? logger = null)
+        public static AccountsResponse.AccountList GetAccounts(string memberID, AccessDetails details, string baseAddress, string apiVersion, ILogger? logger = null)
         {
             var client = new HttpClient();
 
-            string requestContent = baseAddress + "/_apis/Accounts?memberId=" + memberID + "&api-version=4.1";
+            string requestContent = baseAddress + "/_apis/Accounts?memberId=" + memberID + "&api-version=" + apiVersion;
             var request = new HttpRequestMessage(HttpMethod.Get, requestContent);
             request.Headers.Add("Authorization", "Bearer " + details.access_token);
             
